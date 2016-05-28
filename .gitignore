@@ -1,0 +1,7 @@
+*.swp
+*.pyc
+microfs.egg-info/*
+.cache/*
+.coverage
+dist/*
+build/*
