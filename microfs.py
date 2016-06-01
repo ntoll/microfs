@@ -24,7 +24,7 @@ __all__ = ['get_version', 'ls', 'rm', 'put', 'get']
 
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
-_VERSION = (0, 9, 9)
+_VERSION = (1, 0, 0)
 
 
 #: The help text to be shown when requested.

@@ -1,7 +1,7 @@
 Release History
 ===============
 
-0.9.9
+1.0.0
 -----
 
 * Full implementation of all the expected features.
