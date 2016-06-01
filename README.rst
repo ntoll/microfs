@@ -1,8 +1,8 @@
 MicroFS
 -------
 
-A simple command line tool and module for interacting with the simple
-filesystem on the BBC micro:bit.
+A simple command line tool and module for interacting with the limited
+file system provided by MicroPython on the BBC micro:bit.
 
 Installation
 ++++++++++++
@@ -19,6 +19,16 @@ latest version, use the following command::
 Usage
 +++++
 
+In your code::
+
+    from microfs import ls, rm, put, get
+
+From the command line use the "ufs" ("u" = micro) command.
+
+To read the built-in help::
+
+    $ ufs --help
+
 List the files on the device::
 
     $ ufs ls
@@ -33,7 +43,7 @@ Copy a file onto the device::
 
 Get a file from the device::
 
-    $ ufs get foo.txt /path/to/copy/to/file.txt
+    $ ufs get foo.txt
 
 Development
 +++++++++++

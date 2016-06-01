@@ -23,6 +23,7 @@ setup(
     url='https://github.com/ntoll/microfs',
     py_modules=['microfs', ],
     license='MIT',
+    install_requires=['pyserial', ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
