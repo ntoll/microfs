@@ -19,14 +19,6 @@ else:
     import builtins
 
 
-def test_get_version():
-    """
-    Ensure call to the get_version function returns the expected string.
-    """
-    result = microfs.get_version()
-    assert result == '.'.join([str(i) for i in microfs._VERSION])
-
-
 def test_find_micro_bit():
     """
     If a micro:bit is connected (according to PySerial) return the port.

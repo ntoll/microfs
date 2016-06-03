@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.0.1
+-----
+
+* Fix broken setup.
+
 1.0.0
 -----
 

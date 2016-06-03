@@ -10,6 +10,7 @@ You may:
 * put - copy a named local file onto the device a la equivalent FTP command.
 * get - copy a named file from the device to the local file system a la FTP.
 """
+from __future__ import print_function
 import ast
 import argparse
 import sys
@@ -20,11 +21,7 @@ from serial.tools.list_ports import comports as list_serial_ports
 from serial import Serial
 
 
-__all__ = ['get_version', 'ls', 'rm', 'put', 'get']
-
-
-#: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
-_VERSION = (1, 0, 0)
+__all__ = ['ls', 'rm', 'put', 'get']
 
 
 #: The help text to be shown when requested.
@@ -39,13 +36,6 @@ You may use the following commands:
 
 For example, 'ufs ls' will list the files on a connected BBC micro:bit.
 """
-
-
-def get_version():
-    """
-    Returns a string representation of the version information of this project.
-    """
-    return '.'.join([str(i) for i in _VERSION])
 
 
 def find_microbit():

@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 from setuptools import setup
-from microfs import get_version
+
+
+#: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
+_VERSION = (1, 0, 1)
+
+
+def get_version():
+    """
+    Returns a string representation of the version information of this project.
+    """
+    return '.'.join([str(i) for i in _VERSION])
 
 
 with open('README.rst') as f:
