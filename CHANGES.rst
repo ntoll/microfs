@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.0.2
+-----
+
+* Remove spare print call.
+
 1.0.1
 -----
 

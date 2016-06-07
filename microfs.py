@@ -78,7 +78,6 @@ def execute(command):
         while not result.endswith(b'\x04>'):  # Read until prompt.
             time.sleep(0.1)
             result.extend(serial.read_all())
-        print(result)
         out, err = result[2:-2].split(b'\x04', 1)  # Split stdout, stderr
         serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
         time.sleep(0.1)
