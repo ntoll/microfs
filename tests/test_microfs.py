@@ -71,13 +71,11 @@ def test_execute():
             # Check the writes are of the right number and sort (to ensure the
             # device is put into the correct states).
             expected = command.encode('utf-8') + b'\x04'
-            assert mock_serial.write.call_count == 6
-            assert mock_serial.write.call_args_list[0][0][0] == b'\x04'
-            assert mock_serial.write.call_args_list[1][0][0] == b'\x03'
-            assert mock_serial.write.call_args_list[2][0][0] == b'\x01'
-            assert mock_serial.write.call_args_list[3][0][0] == expected
-            assert mock_serial.write.call_args_list[4][0][0] == b'\x02'
-            assert mock_serial.write.call_args_list[5][0][0] == b'\x04'
+            assert mock_serial.write.call_count == 4
+            assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
+            assert mock_serial.write.call_args_list[1][0][0] == b'\x01'
+            assert mock_serial.write.call_args_list[2][0][0] == expected
+            assert mock_serial.write.call_args_list[3][0][0] == b'\x02'
 
 
 def test_execute_err_result():

@@ -15,7 +15,6 @@ import ast
 import argparse
 import sys
 import os
-import time
 import os.path
 from serial.tools.list_ports import comports as list_serial_ports
 from serial import Serial
@@ -62,27 +61,17 @@ def execute(command):
     if port is None:
         raise IOError('Could not find micro:bit.')
     with Serial(port, 115200, timeout=1, parity='N') as serial:
-        serial.write(b'\x04')  # Send CTRL-D for soft reset.
-        time.sleep(0.1)
-        serial.write(b'\x03')  # Send CTRL-C to break out of potential loop.
-        time.sleep(0.1)
-        serial.read_until(b'\r\n>')  # Flush buffer until prompt.
-        time.sleep(0.1)
+        serial.write(b'\x03')  # Send CTRL-C to break out of loop.
+        serial.read_until(b'\n>')  # Flush buffer until prompt.
         serial.write(b'\x01')  # Go into raw mode.
-        time.sleep(0.1)
         serial.read_until(b'\r\n>OK')  # Flush buffer until raw mode prompt.
-        time.sleep(0.1)
         # Write the actual command and send CTRL-D to evaluate.
         serial.write(command.encode('utf-8') + b'\x04')
         result = bytearray()
         while not result.endswith(b'\x04>'):  # Read until prompt.
-            time.sleep(0.1)
             result.extend(serial.read_all())
         out, err = result[2:-2].split(b'\x04', 1)  # Split stdout, stderr
         serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
-        time.sleep(0.1)
-        serial.write(b'\x04')  # Finally, send CTRL-D for soft reset.
-        time.sleep(0.1)
         return out, err
 
 
