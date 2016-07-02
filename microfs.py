@@ -15,9 +15,13 @@ import ast
 import argparse
 import sys
 import os
+import time
 import os.path
 from serial.tools.list_ports import comports as list_serial_ports
 from serial import Serial
+
+
+PY2 = sys.version_info < (3,)
 
 
 __all__ = ['ls', 'rm', 'put', 'get']
@@ -48,7 +52,24 @@ def find_microbit():
     return None
 
 
-def execute(command):
+def raw_on(serial):
+    """
+    Puts the device into raw mode.
+    """
+    serial.write(b'\x03')  # Send CTRL-C to break out of loop.
+    serial.read_until(b'\n>')  # Flush buffer until prompt.
+    serial.write(b'\x01')  # Go into raw mode.
+    serial.read_until(b'\r\n>OK')  # Flush buffer until raw mode prompt.
+
+
+def raw_off(serial):
+    """
+    Takes the device out of raw mode.
+    """
+    serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
+
+
+def execute(commands):
     """
     Sends the command to the connected micro:bit and returns the result.
 
@@ -58,21 +79,27 @@ def execute(command):
     Returns the stdout and stderr output from the micro:bit.
     """
     port = find_microbit()
+    result = b''
     if port is None:
         raise IOError('Could not find micro:bit.')
     with Serial(port, 115200, timeout=1, parity='N') as serial:
-        serial.write(b'\x03')  # Send CTRL-C to break out of loop.
-        serial.read_until(b'\n>')  # Flush buffer until prompt.
-        serial.write(b'\x01')  # Go into raw mode.
-        serial.read_until(b'\r\n>OK')  # Flush buffer until raw mode prompt.
+        raw_on(serial)
         # Write the actual command and send CTRL-D to evaluate.
-        serial.write(command.encode('utf-8') + b'\x04')
-        result = bytearray()
-        while not result.endswith(b'\x04>'):  # Read until prompt.
-            result.extend(serial.read_all())
-        out, err = result[2:-2].split(b'\x04', 1)  # Split stdout, stderr
-        serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
-        return out, err
+        for command in commands:
+            command_bytes = command.encode('utf-8')
+            for i in range(0, len(command_bytes), 32):
+                serial.write(command_bytes[i:min(i + 32, len(command_bytes))])
+                time.sleep(0.01)
+            serial.write(b'\x04')
+            response = bytearray()
+            while not response.endswith(b'\x04>'):  # Read until prompt.
+                response.extend(serial.read_all())
+            out, err = response[2:-2].split(b'\x04', 1)  # Split stdout, stderr
+            result += out
+            if err:
+                return b'', err
+        raw_off(serial)
+        return result, err
 
 
 def clean_error(err):
@@ -94,7 +121,10 @@ def ls():
     Returns a list of the files on the connected device or raises an IOError if
     there's a problem.
     """
-    out, err = execute('import os;\nprint(os.listdir())')
+    out, err = execute([
+        'import os',
+        'print(os.listdir())',
+    ])
     if err:
         raise IOError(clean_error(err))
     return ast.literal_eval(out.decode('utf-8'))
@@ -106,8 +136,11 @@ def rm(filename):
 
     Returns True for success or raises an IOError if there's a problem.
     """
-    command = "import os;\nos.remove('{}')".format(filename)
-    out, err = execute(command)
+    commands = [
+        "import os",
+        "os.remove('{}')".format(filename),
+    ]
+    out, err = execute(commands)
     if err:
         raise IOError(clean_error(err))
     return True
@@ -122,11 +155,22 @@ def put(filename):
     """
     if not os.path.isfile(filename):
         raise IOError('No such file.')
-    with open(filename) as local:
+    with open(filename, 'rb') as local:
         content = local.read()
     filename = os.path.basename(filename)
-    command = "with open('{}', 'w') as f:\n    f.write('''{}''')"
-    out, err = execute(command.format(filename, content))
+    commands = [
+        "fd = open('{}', 'wb')".format(filename),
+        "f = fd.write",
+    ]
+    while content:
+        line = content[:64]
+        if PY2:
+            commands.append('f(b' + repr(line) + ')')
+        else:
+            commands.append('f(' + repr(line) + ')')
+        content = content[64:]
+    commands.append('fd.close()')
+    out, err = execute(commands)
     if err:
         raise IOError(clean_error(err))
     return True
@@ -139,12 +183,20 @@ def get(filename):
 
     Returns True for success or raises an IOError if there's a problem.
     """
-    command = "with open('{}') as f:\n  print(f.read())"
-    out, err = execute(command.format(filename))
+    commands = [
+        "f = open('{}', 'rb')".format(filename),
+        "r = f.read",
+        "result = True",
+        "while result:\n    result = r(32)\n    if result:\n        "
+        "uart.write(result)\n",
+        "f.close()",
+    ]
+    out, err = execute(commands)
     if err:
         raise IOError(clean_error(err))
-    with open(filename, 'w') as f:
-        f.write(out.decode('utf-8'))
+    # Recombine the bytes while removing "b'" from start and "'" from end.
+    with open(filename, 'wb') as f:
+        f.write(out)
     return True
 
 

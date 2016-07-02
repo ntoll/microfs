@@ -49,6 +49,33 @@ def test_find_micro_bit_no_device():
         assert result is None
 
 
+def test_raw_on():
+    """
+    Check the expected commands are sent to the device to put MicroPython into
+    raw mode.
+    """
+    mock_serial = mock.MagicMock()
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
+                                                         b'\r\n>OK'])
+    microfs.raw_on(mock_serial)
+    assert mock_serial.write.call_count == 2
+    assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
+    assert mock_serial.write.call_args_list[1][0][0] == b'\x01'
+    assert mock_serial.read_until.call_count == 2
+    assert mock_serial.read_until.call_args_list[0][0][0] == b'\n>'
+    assert mock_serial.read_until.call_args_list[1][0][0] == b'\r\n>OK'
+
+
+def test_raw_off():
+    """
+    Check that the expected commands are sent to the device to take
+    MicroPython out of raw mode.
+    """
+    mock_serial = mock.MagicMock()
+    microfs.raw_off(mock_serial)
+    mock_serial.write.assert_called_once_with(b'\x02')
+
+
 def test_execute():
     """
     Ensure that the expected communication happens via the serial connection
@@ -58,24 +85,31 @@ def test_execute():
     mock_serial = mock.MagicMock()
     mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
                                                          b'\r\n>OK'])
-    mock_serial.read_all = mock.MagicMock(return_value=b'OK[]\r\n\x04\x04>')
+    mock_serial.read_all = mock.MagicMock(side_effect=[b'OK\x04\x04>',
+                                                       b'OK[]\x04\x04>'])
     mock_class = mock.MagicMock()
     mock_class.__enter__ = mock.MagicMock(return_value=mock_serial)
-    command = 'import os; os.listdir()'
-    with mock.patch('microfs.find_microbit', return_value='/dev/ttyACM3'):
-        with mock.patch('microfs.Serial', return_value=mock_class):
-            out, err = microfs.execute(command)
-            # Check the result is correctly parsed.
-            assert out == b'[]\r\n'
-            assert err == b''
-            # Check the writes are of the right number and sort (to ensure the
-            # device is put into the correct states).
-            expected = command.encode('utf-8') + b'\x04'
-            assert mock_serial.write.call_count == 4
-            assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
-            assert mock_serial.write.call_args_list[1][0][0] == b'\x01'
-            assert mock_serial.write.call_args_list[2][0][0] == expected
-            assert mock_serial.write.call_args_list[3][0][0] == b'\x02'
+    commands = ['import os', 'os.listdir()', ]
+    with mock.patch('microfs.find_microbit', return_value='/dev/ttyACM3'), \
+            mock.patch('microfs.Serial', return_value=mock_class), \
+            mock.patch('microfs.raw_on', return_value=None) as raw_mon, \
+            mock.patch('microfs.raw_off', return_value=None) as raw_moff:
+        out, err = microfs.execute(commands)
+        # Check the result is correctly parsed.
+        assert out == b'[]'
+        assert err == b''
+        # Check raw_on and raw_off were called.
+        raw_mon.assert_called_once_with(mock_serial)
+        raw_moff.assert_called_once_with(mock_serial)
+        # Check the writes are of the right number and sort (to ensure the
+        # device is put into the correct states).
+        assert mock_serial.write.call_count == 4
+        encoded0 = commands[0].encode('utf-8')
+        encoded1 = commands[1].encode('utf-8')
+        assert mock_serial.write.call_args_list[0][0][0] == encoded0
+        assert mock_serial.write.call_args_list[1][0][0] == b'\x04'
+        assert mock_serial.write.call_args_list[2][0][0] == encoded1
+        assert mock_serial.write.call_args_list[3][0][0] == b'\x04'
 
 
 def test_execute_err_result():
@@ -150,7 +184,8 @@ def test_ls():
                                                      b'')) as execute:
         result = microfs.ls()
         assert result == ['a.txt']
-        execute.assert_called_once_with('import os;\nprint(os.listdir())')
+        execute.assert_called_once_with(['import os',
+                                         'print(os.listdir())', ])
 
 
 def test_ls_with_error():
@@ -169,7 +204,7 @@ def test_rm():
     """
     with mock.patch('microfs.execute', return_value=(b'', b'')) as execute:
         assert microfs.rm('foo')
-        execute.assert_called_once_with("import os;\nos.remove('foo')")
+        execute.assert_called_once_with(["import os", "os.remove('foo')", ])
 
 
 def test_rm_with_error():
@@ -182,7 +217,7 @@ def test_rm_with_error():
     assert ex.value.args[0] == 'error'
 
 
-def test_put():
+def test_put_python3():
     """
     Ensure a put of an existing file results in the expected calls to the
     micro:bit and returns True.
@@ -191,10 +226,39 @@ def test_put():
     with open(path, 'r') as fixture_file:
         content = fixture_file.read()
         with mock.patch('microfs.execute', return_value=(b'', b'')) as execute:
-            assert microfs.put(path)
-            command = "with open('{}', 'w') as f:\n    f.write('''{}''')"
-            expected = command.format('fixture_file.txt', content)
-            execute.assert_called_once_with(expected)
+            with mock.patch('microfs.PY2', False):
+                with mock.patch.object(builtins, 'repr',
+                                       return_value="b'{}'".format(content)):
+                    assert microfs.put(path)
+            commands = [
+                "fd = open('{}', 'wb')".format('fixture_file.txt'),
+                "f = fd.write",
+                "f(b'{}')".format(content),
+                "fd.close()",
+            ]
+            execute.assert_called_once_with(commands)
+
+
+def test_put_python2():
+    """
+    Ensure a put of an existing file results in the expected calls to the
+    micro:bit and returns True when running on Python 2.
+    """
+    path = 'tests/fixture_file.txt'
+    with open(path, 'r') as fixture_file:
+        content = fixture_file.read()
+        with mock.patch('microfs.execute', return_value=(b'', b'')) as execute:
+            with mock.patch('microfs.PY2', True):
+                with mock.patch.object(builtins, 'repr',
+                                       return_value="'{}'".format(content)):
+                    assert microfs.put(path)
+            commands = [
+                "fd = open('{}', 'wb')".format('fixture_file.txt'),
+                "f = fd.write",
+                "f(b'{}')".format(content),
+                "fd.close()",
+            ]
+            execute.assert_called_once_with(commands)
 
 
 def test_put_non_existent_file():
@@ -226,11 +290,18 @@ def test_get():
         mo = mock.mock_open()
         with mock.patch('microfs.open', mo, create=True):
             assert microfs.get('hello.txt')
-            command = "with open('hello.txt') as f:\n  print(f.read())"
-            exe.assert_called_once_with(command)
-            mo.assert_called_once_with('hello.txt', 'w')
+            commands = [
+                "f = open('{}', 'rb')".format('hello.txt'),
+                "r = f.read",
+                "result = True",
+                "while result:\n    result = r(32)\n    if result:\n        "
+                "uart.write(result)\n",
+                "f.close()",
+            ]
+            exe.assert_called_once_with(commands)
+            mo.assert_called_once_with('hello.txt', 'wb')
             handle = mo()
-            handle.write.assert_called_once_with('hello')
+            handle.write.assert_called_once_with(b'hello')
 
 
 def test_get_with_error():

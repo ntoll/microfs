@@ -1,6 +1,15 @@
 Release History
 ===============
 
+1.1.0
+-----
+
+* Fix broken 'put' and 'get' commands to work with arbitrary file sizes.
+* Fix error when working with binary data.
+* Update execute function to work with lists of multiple commands.
+* Minor refactor to extract raw mode related code.
+* Updated tests to keep coverage at 100% on both Python 2 and Python 3.
+
 1.0.2
 -----
 
