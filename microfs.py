@@ -69,37 +69,45 @@ def raw_off(serial):
     serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
 
 
-def execute(commands):
+def get_serial():
     """
-    Sends the command to the connected micro:bit and returns the result.
+    Detect if a micro:bit is connected and return a serial object to talk to
+    it.
+    """
+    port = find_microbit()
+    if port is None:
+        raise IOError('Could not find micro:bit.')
+    return Serial(port, 115200, timeout=1, parity='N')
+
+
+def execute(commands, serial):
+    """
+    Sends the command to the connected micro:bit via serial and returns the
+    result.
 
     For this to work correctly, a particular sequence of commands needs to be
     sent to put the device into a good state to process the incoming command.
 
     Returns the stdout and stderr output from the micro:bit.
     """
-    port = find_microbit()
     result = b''
-    if port is None:
-        raise IOError('Could not find micro:bit.')
-    with Serial(port, 115200, timeout=1, parity='N') as serial:
-        raw_on(serial)
-        # Write the actual command and send CTRL-D to evaluate.
-        for command in commands:
-            command_bytes = command.encode('utf-8')
-            for i in range(0, len(command_bytes), 32):
-                serial.write(command_bytes[i:min(i + 32, len(command_bytes))])
-                time.sleep(0.01)
-            serial.write(b'\x04')
-            response = bytearray()
-            while not response.endswith(b'\x04>'):  # Read until prompt.
-                response.extend(serial.read_all())
-            out, err = response[2:-2].split(b'\x04', 1)  # Split stdout, stderr
-            result += out
-            if err:
-                return b'', err
-        raw_off(serial)
-        return result, err
+    raw_on(serial)
+    # Write the actual command and send CTRL-D to evaluate.
+    for command in commands:
+        command_bytes = command.encode('utf-8')
+        for i in range(0, len(command_bytes), 32):
+            serial.write(command_bytes[i:min(i + 32, len(command_bytes))])
+            time.sleep(0.01)
+        serial.write(b'\x04')
+        response = bytearray()
+        while not response.endswith(b'\x04>'):  # Read until prompt.
+            response.extend(serial.read_all())
+        out, err = response[2:-2].split(b'\x04', 1)  # Split stdout, stderr
+        result += out
+        if err:
+            return b'', err
+    raw_off(serial)
+    return result, err
 
 
 def clean_error(err):
@@ -116,7 +124,7 @@ def clean_error(err):
     return 'There was an error.'
 
 
-def ls():
+def ls(serial):
     """
     Returns a list of the files on the connected device or raises an IOError if
     there's a problem.
@@ -124,13 +132,13 @@ def ls():
     out, err = execute([
         'import os',
         'print(os.listdir())',
-    ])
+    ], serial)
     if err:
         raise IOError(clean_error(err))
     return ast.literal_eval(out.decode('utf-8'))
 
 
-def rm(filename):
+def rm(serial, filename):
     """
     Removes a referenced file on the micro:bit.
 
@@ -140,16 +148,16 @@ def rm(filename):
         "import os",
         "os.remove('{}')".format(filename),
     ]
-    out, err = execute(commands)
+    out, err = execute(commands, serial)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def put(filename):
+def put(serial, filename):
     """
-    Puts a referenced file on the LOCAL file system onto the file system on
-    the BBC micro:bit.
+    Puts a referenced file on the LOCAL file system onto tht
+    file system on the BBC micro:bit.
 
     Returns True for success or raises an IOError if there's a problem.
     """
@@ -170,20 +178,23 @@ def put(filename):
             commands.append('f(' + repr(line) + ')')
         content = content[64:]
     commands.append('fd.close()')
-    out, err = execute(commands)
+    out, err = execute(commands, serial)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def get(filename):
+def get(serial, filename, target=None):
     """
     Gets a referenced file on the device's file system and copies it to the
-    current working directory.
+    target (or current working directory if unspecified).
 
     Returns True for success or raises an IOError if there's a problem.
     """
+    if target is None:
+        target = filename
     commands = [
+        "from microbit import uart",
         "f = open('{}', 'rb')".format(filename),
         "r = f.read",
         "result = True",
@@ -191,11 +202,11 @@ def get(filename):
         "uart.write(result)\n",
         "f.close()",
     ]
-    out, err = execute(commands)
+    out, err = execute(commands, serial)
     if err:
         raise IOError(clean_error(err))
     # Recombine the bytes while removing "b'" from start and "'" from end.
-    with open(filename, 'wb') as f:
+    with open(target, 'wb') as f:
         f.write(out)
     return True
 
@@ -218,22 +229,26 @@ def main(argv=None):
                             help="Use when a file needs referencing.")
         args = parser.parse_args(argv)
         if args.command == 'ls':
-            list_of_files = ls()
-            if list_of_files:
-                print(' '.join(list_of_files))
+            with get_serial() as serial:
+                list_of_files = ls(serial)
+                if list_of_files:
+                    print(' '.join(list_of_files))
         elif args.command == 'rm':
             if args.path:
-                rm(args.path)
+                with get_serial() as serial:
+                    rm(serial, args.path)
             else:
                 print('rm: missing filename. (e.g. "ufs rm foo.txt")')
         elif args.command == 'put':
             if args.path:
-                put(args.path)
+                with get_serial() as serial:
+                    put(serial, args.path)
             else:
                 print('put: missing filename. (e.g. "ufs put foo.txt")')
         elif args.command == 'get':
             if args.path:
-                get(args.path)
+                with get_serial() as serial:
+                    get(serial, args.path)
             else:
                 print('get: missing filename. (e.g. "ufs get foo.txt")')
         else:
