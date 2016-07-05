@@ -24,7 +24,7 @@ from serial import Serial
 PY2 = sys.version_info < (3,)
 
 
-__all__ = ['ls', 'rm', 'put', 'get']
+__all__ = ['ls', 'rm', 'put', 'get', 'get_serial']
 
 
 #: The help text to be shown when requested.
@@ -156,7 +156,7 @@ def rm(serial, filename):
 
 def put(serial, filename):
     """
-    Puts a referenced file on the LOCAL file system onto tht
+    Puts a referenced file on the LOCAL file system onto the
     file system on the BBC micro:bit.
 
     Returns True for success or raises an IOError if there's a problem.
