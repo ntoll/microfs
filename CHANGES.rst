@@ -1,6 +1,12 @@
 Release History
 ===============
 
+1.2.0
+-----
+
+* **API CHANGE** the serial object passed into command functions is optional.
+* **API CHANGE** call signature changes on command functions.
+
 1.1.2
 -----
 

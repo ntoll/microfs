@@ -19,11 +19,23 @@ latest version, use the following command::
 Usage
 +++++
 
-In your code::
+There are two ways to use microfs - as a module in your Python code or as a
+stand-alone command to use from your shell (``ufs``).
 
-    from microfs import ls, rm, put, get
+In Code
+=======
 
-From the command line use the "ufs" ("u" = micro) command.
+In your Python script import the required functions like this::
+
+    from microfs import ls, rm, put, get, get_serial
+
+Read the API documentation below to learn how each of the functions works.
+
+Command Line
+============
+
+From the command line (but not the Python shell) use the "ufs" ("u" = micro)
+command.
 
 To read the built-in help::
 
