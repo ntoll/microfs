@@ -249,6 +249,7 @@ def test_put_python3():
     micro:bit and returns True.
     """
     path = 'tests/fixture_file.txt'
+    target = 'remote.txt'
     mock_serial = mock.MagicMock()
     with open(path, 'r') as fixture_file:
         content = fixture_file.read()
@@ -256,7 +257,30 @@ def test_put_python3():
             with mock.patch('microfs.PY2', False):
                 with mock.patch.object(builtins, 'repr',
                                        return_value="b'{}'".format(content)):
-                    assert microfs.put(path, mock_serial)
+                    assert microfs.put(path, target, mock_serial)
+            commands = [
+                "fd = open('{}', 'wb')".format('remote.txt'),
+                "f = fd.write",
+                "f(b'{}')".format(content),
+                "fd.close()",
+            ]
+            execute.assert_called_once_with(commands, mock_serial)
+
+
+def test_put_no_target_python3():
+    """
+    Ensure a put of an existing file results in the expected calls to the
+    micro:bit and returns True.
+    """
+    path = 'tests/fixture_file.txt'
+    mock_serial = mock.MagicMock()
+    with open(path, 'r') as fixture_file:
+        content = fixture_file.read()
+        with mock.patch('microfs.execute', return_value=(b'', b'')) as execute:
+            with mock.patch('microfs.PY2', False):
+                with mock.patch.object(builtins, 'repr',
+                                       return_value="b'{}'".format(content)):
+                    assert microfs.put(path, None, mock_serial)
             commands = [
                 "fd = open('{}', 'wb')".format('fixture_file.txt'),
                 "f = fd.write",
@@ -272,6 +296,7 @@ def test_put_python2():
     micro:bit and returns True when running on Python 2.
     """
     path = 'tests/fixture_file.txt'
+    target = 'remote.txt'
     mock_serial = mock.MagicMock()
     with open(path, 'r') as fixture_file:
         content = fixture_file.read()
@@ -279,7 +304,30 @@ def test_put_python2():
             with mock.patch('microfs.PY2', True):
                 with mock.patch.object(builtins, 'repr',
                                        return_value="'{}'".format(content)):
-                    assert microfs.put(path, mock_serial)
+                    assert microfs.put(path, target, mock_serial)
+            commands = [
+                "fd = open('{}', 'wb')".format('remote.txt'),
+                "f = fd.write",
+                "f(b'{}')".format(content),
+                "fd.close()",
+            ]
+            execute.assert_called_once_with(commands, mock_serial)
+
+
+def test_put_no_target_python2():
+    """
+    Ensure a put of an existing file results in the expected calls to the
+    micro:bit and returns True when running on Python 2.
+    """
+    path = 'tests/fixture_file.txt'
+    mock_serial = mock.MagicMock()
+    with open(path, 'r') as fixture_file:
+        content = fixture_file.read()
+        with mock.patch('microfs.execute', return_value=(b'', b'')) as execute:
+            with mock.patch('microfs.PY2', True):
+                with mock.patch.object(builtins, 'repr',
+                                       return_value="'{}'".format(content)):
+                    assert microfs.put(path, None, mock_serial)
             commands = [
                 "fd = open('{}', 'wb')".format('fixture_file.txt'),
                 "f = fd.write",
@@ -451,7 +499,7 @@ def test_main_put():
     with mock.patch('microfs.put', return_value=True) as mock_put, \
             mock.patch('microfs.get_serial', return_value=mock_class):
         microfs.main(argv=['put', 'foo'])
-        mock_put.assert_called_once_with('foo')
+        mock_put.assert_called_once_with('foo', None)
 
 
 def test_main_put_no_filename():
@@ -477,7 +525,7 @@ def test_main_get():
     with mock.patch('microfs.get', return_value=True) as mock_get, \
             mock.patch('microfs.get_serial', return_value=mock_class):
         microfs.main(argv=['get', 'foo'])
-        mock_get.assert_called_once_with('foo')
+        mock_get.assert_called_once_with('foo', None)
 
 
 def test_main_get_no_filename():
