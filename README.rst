@@ -51,11 +51,17 @@ Delete a file on the device::
 
 Copy a file onto the device::
 
-    $ ufs put path/to/file.txt
+    $ ufs put path/to/local.txt
 
 Get a file from the device::
 
-    $ ufs get foo.txt
+    $ ufs get remote.txt
+
+The ``put`` and ``get`` commands optionally take a further argument to specify
+the name of the target file::
+
+    $ ufs put /path/to/local.txt remote.txt
+    $ ufs get remote.txt local.txt
 
 Development
 +++++++++++

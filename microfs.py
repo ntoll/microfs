@@ -165,7 +165,7 @@ def rm(filename, serial=None):
     return True
 
 
-def put(filename, serial=None):
+def put(filename, target=None, serial=None):
     """
     Puts a referenced file on the LOCAL file system onto the
     file system on the BBC micro:bit.
@@ -180,8 +180,10 @@ def put(filename, serial=None):
     with open(filename, 'rb') as local:
         content = local.read()
     filename = os.path.basename(filename)
+    if target is None:
+        target = filename
     commands = [
-        "fd = open('{}', 'wb')".format(filename),
+        "fd = open('{}', 'wb')".format(target),
         "f = fd.write",
     ]
     while content:
@@ -244,6 +246,8 @@ def main(argv=None):
                             help="One of 'ls', 'rm', 'put' or 'get'.")
         parser.add_argument('path', nargs='?', default=None,
                             help="Use when a file needs referencing.")
+        parser.add_argument('target', nargs='?', default=None,
+                            help="Use to specify a target filename.")
         args = parser.parse_args(argv)
         if args.command == 'ls':
             list_of_files = ls()
@@ -256,12 +260,12 @@ def main(argv=None):
                 print('rm: missing filename. (e.g. "ufs rm foo.txt")')
         elif args.command == 'put':
             if args.path:
-                put(args.path)
+                put(args.path, args.target)
             else:
                 print('put: missing filename. (e.g. "ufs put foo.txt")')
         elif args.command == 'get':
             if args.path:
-                get(args.path)
+                get(args.path, args.target)
             else:
                 print('get: missing filename. (e.g. "ufs get foo.txt")')
         else:
