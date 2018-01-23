@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 #: MAJOR, MINOR, RELEASE, STATUS [alpha, beta, final], VERSION
-_VERSION = (1, 2, 1)
+_VERSION = (1, 2, 2)
 
 
 def get_version():
