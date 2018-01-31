@@ -1,6 +1,16 @@
 Release History
 ===============
 
+1.2.2
+-----
+
+* The get and put commands optionally take a further argument to specify the name of the target file.
+
+1.2.1
+-----
+
+* Made implicit string concatenation explicit.
+
 1.2.0
 -----
 
