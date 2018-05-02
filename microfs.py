@@ -57,12 +57,12 @@ def raw_on(serial):
     Puts the device into raw mode.
     """
     attempts_left = 3
-    bytes_read = b''
-    while not bytes_read.endswith(b'\n>>>') and attempts_left:
+    while attempts_left:
         serial.write(b'\x03')    # Send CTRL-C to break out of loop.
-        bytes_read = serial.read_until(b'\n>>>')  # Flush buffer until prompt.
+        if serial.read_until(b'\n>>>').endswith(b'\n>>>'):
+            break
         attempts_left -= 1
-    if not attempts_left:
+    else:
         raise IOError('Could not enter REPL mode.')
     serial.write(b'\x01')        # Go into raw mode.
     serial.read_until(b'\r\n>')  # Flush buffer until raw mode prompt.

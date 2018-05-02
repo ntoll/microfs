@@ -56,7 +56,7 @@ def test_raw_on():
     """
     mock_serial = mock.MagicMock()
     mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
-                                                         b'\r\n>O'])
+                                                         b'\r\n>'])
     microfs.raw_on(mock_serial)
     assert mock_serial.write.call_count == 2
     assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
