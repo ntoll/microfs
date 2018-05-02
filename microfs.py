@@ -65,7 +65,8 @@ def raw_on(serial):
     while n > 0:
         serial.read(n)
         n = serial.inWaiting()
-    # Go into raw mode.
+    serial.read_until()
+    # Go into raw mode with CTRL-A.
     serial.write(b'\r\x01')
     # Flush
     data = serial.read_until(b'raw REPL; CTRL-B to exit\r\n>')

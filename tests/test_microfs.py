@@ -57,6 +57,7 @@ def test_raw_on():
     mock_serial = mock.MagicMock()
     mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
         b'raw REPL; CTRL-B to exit\r\n>',
@@ -69,10 +70,11 @@ def test_raw_on():
     assert mock_serial.write.call_args_list[1][0][0] == b'\r\x03\x03'
     assert mock_serial.write.call_args_list[2][0][0] == b'\r\x01'
     assert mock_serial.write.call_args_list[3][0][0] == b'\x04'
-    assert mock_serial.read_until.call_count == 3
-    assert mock_serial.read_until.call_args_list[0][0][0] == data[0]
+    assert mock_serial.read_until.call_count == 4
+    assert mock_serial.read_until.call_args_list[0] == mock.call()
     assert mock_serial.read_until.call_args_list[1][0][0] == data[1]
     assert mock_serial.read_until.call_args_list[2][0][0] == data[2]
+    assert mock_serial.read_until.call_args_list[3][0][0] == data[3]
 
 
 def test_raw_on_failures():
@@ -82,6 +84,7 @@ def test_raw_on_failures():
     mock_serial = mock.MagicMock()
     mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n> foo',
     ]
     mock_serial.read_until.side_effect = data
@@ -89,6 +92,7 @@ def test_raw_on_failures():
         microfs.raw_on(mock_serial)
     assert ex.value.args[0] == 'Could not enter raw REPL.'
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n foo',
     ]
@@ -98,6 +102,7 @@ def test_raw_on_failures():
         microfs.raw_on(mock_serial)
     assert ex.value.args[0] == 'Could not enter raw REPL.'
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
         b'raw REPL; CTRL-B to exit\r\n> foo',
@@ -182,6 +187,7 @@ def test_execute_err_result():
     mock_serial = mock.MagicMock()
     mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
         b'raw REPL; CTRL-B to exit\r\n>',
@@ -204,6 +210,7 @@ def test_execute_no_serial():
     mock_serial = mock.MagicMock()
     mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
     data = [
+        b'',
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
         b'raw REPL; CTRL-B to exit\r\n>',
