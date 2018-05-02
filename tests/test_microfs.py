@@ -55,15 +55,29 @@ def test_raw_on():
     raw mode.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
-                                                         b'\r\n>OK'])
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
+                                                         b'\r\n>O'])
     microfs.raw_on(mock_serial)
     assert mock_serial.write.call_count == 2
     assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
     assert mock_serial.write.call_args_list[1][0][0] == b'\x01'
     assert mock_serial.read_until.call_count == 2
-    assert mock_serial.read_until.call_args_list[0][0][0] == b'\n>'
-    assert mock_serial.read_until.call_args_list[1][0][0] == b'\r\n>OK'
+    assert mock_serial.read_until.call_args_list[0][0][0] == b'\n>>>'
+    assert mock_serial.read_until.call_args_list[1][0][0] == b'\r\n>'
+
+
+def test_raw_attempts():
+    """
+    Ensure that if the expect serial data is not encountered three times it
+    will raise an exception.
+    """
+    mock_serial = mock.MagicMock()
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'Unexpected data',
+                                                         b'Nothing good here',
+                                                         b'Last chance'])
+    with pytest.raises(IOError) as ex:
+        microfs.raw_on(mock_serial)
+    assert ex.value.args[0] == 'Could not enter REPL mode.'
 
 
 def test_raw_off():
@@ -105,10 +119,8 @@ def test_execute():
     in command.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
-                                                         b'\r\n>OK'])
-    mock_serial.read_all = mock.MagicMock(side_effect=[b'OK\x04\x04>',
-                                                       b'OK[]\x04\x04>'])
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'OK\x04\x04>',
+                                                         b'OK[]\x04\x04>'])
     commands = ['import os', 'os.listdir()', ]
     with mock.patch('microfs.get_serial', return_value=mock_serial), \
             mock.patch('microfs.raw_on', return_value=None) as raw_mon, \
@@ -137,9 +149,9 @@ def test_execute_err_result():
     returned as such by the execute function.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
-                                                         b'\r\n>OK'])
-    mock_serial.read_all = mock.MagicMock(return_value=b'OK\x04Error\x04>')
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
+                                                         b'\r\n>',
+                                                         b'OK\x04Error\x04>'])
     command = 'import os; os.listdir()'
     with mock.patch('microfs.get_serial', return_value=mock_serial):
         out, err = microfs.execute(command, mock_serial)
@@ -154,9 +166,9 @@ def test_execute_no_serial():
     attempts to get_serial().
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>',
-                                                         b'\r\n>OK'])
-    mock_serial.read_all = mock.MagicMock(return_value=b'OK\x04Error\x04>')
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
+                                                         b'\r\n>',
+                                                         b'OK\x04Error\x04>'])
     command = 'import os; os.listdir()'
     with mock.patch('microfs.get_serial', return_value=mock_serial) as p:
         out, err = microfs.execute(command)
