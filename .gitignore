@@ -5,3 +5,4 @@ microfs.egg-info/*
 .coverage
 dist/*
 build/*
+.pytest_cache/*

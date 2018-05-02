@@ -55,29 +55,58 @@ def test_raw_on():
     raw mode.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
-                                                         b'\r\n>'])
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n',
+        b'raw REPL; CTRL-B to exit\r\n>',
+    ]
+    mock_serial.read_until.side_effect = data
     microfs.raw_on(mock_serial)
-    assert mock_serial.write.call_count == 2
-    assert mock_serial.write.call_args_list[0][0][0] == b'\x03'
-    assert mock_serial.write.call_args_list[1][0][0] == b'\x01'
-    assert mock_serial.read_until.call_count == 2
-    assert mock_serial.read_until.call_args_list[0][0][0] == b'\n>>>'
-    assert mock_serial.read_until.call_args_list[1][0][0] == b'\r\n>'
+    assert mock_serial.inWaiting.call_count == 5
+    assert mock_serial.write.call_count == 4
+    assert mock_serial.write.call_args_list[0][0][0] == b'\x02'
+    assert mock_serial.write.call_args_list[1][0][0] == b'\r\x03\x03'
+    assert mock_serial.write.call_args_list[2][0][0] == b'\r\x01'
+    assert mock_serial.write.call_args_list[3][0][0] == b'\x04'
+    assert mock_serial.read_until.call_count == 3
+    assert mock_serial.read_until.call_args_list[0][0][0] == data[0]
+    assert mock_serial.read_until.call_args_list[1][0][0] == data[1]
+    assert mock_serial.read_until.call_args_list[2][0][0] == data[2]
 
 
-def test_raw_attempts():
+def test_raw_on_failures():
     """
-    Ensure that if the expect serial data is not encountered three times it
-    will raise an exception.
+    Check problem data results in an IO error.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'Unexpected data',
-                                                         b'Nothing good here',
-                                                         b'Last chance'])
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n> foo',
+    ]
+    mock_serial.read_until.side_effect = data
     with pytest.raises(IOError) as ex:
         microfs.raw_on(mock_serial)
-    assert ex.value.args[0] == 'Could not enter REPL mode.'
+    assert ex.value.args[0] == 'Could not enter raw REPL.'
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n foo',
+    ]
+    mock_serial.read_until.side_effect = data
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    with pytest.raises(IOError) as ex:
+        microfs.raw_on(mock_serial)
+    assert ex.value.args[0] == 'Could not enter raw REPL.'
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n',
+        b'raw REPL; CTRL-B to exit\r\n> foo',
+    ]
+    mock_serial.read_until.side_effect = data
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    with pytest.raises(IOError) as ex:
+        microfs.raw_on(mock_serial)
+    assert ex.value.args[0] == 'Could not enter raw REPL.'
 
 
 def test_raw_off():
@@ -87,7 +116,9 @@ def test_raw_off():
     """
     mock_serial = mock.MagicMock()
     microfs.raw_off(mock_serial)
-    mock_serial.write.assert_called_once_with(b'\x02')
+    assert mock_serial.write.call_count == 2
+    assert mock_serial.write.call_args_list[0][0][0] == b'\x02'
+    assert mock_serial.write.call_args_list[1][0][0] == b'\x04'
 
 
 def test_get_serial():
@@ -149,9 +180,14 @@ def test_execute_err_result():
     returned as such by the execute function.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
-                                                         b'\r\n>',
-                                                         b'OK\x04Error\x04>'])
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n',
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'OK\x04Error\x04>',
+    ]
+    mock_serial.read_until.side_effect = data
     command = 'import os; os.listdir()'
     with mock.patch('microfs.get_serial', return_value=mock_serial):
         out, err = microfs.execute(command, mock_serial)
@@ -166,9 +202,14 @@ def test_execute_no_serial():
     attempts to get_serial().
     """
     mock_serial = mock.MagicMock()
-    mock_serial.read_until = mock.MagicMock(side_effect=[b'\r\n>>>',
-                                                         b'\r\n>',
-                                                         b'OK\x04Error\x04>'])
+    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n',
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'OK\x04Error\x04>',
+    ]
+    mock_serial.read_until.side_effect = data
     command = 'import os; os.listdir()'
     with mock.patch('microfs.get_serial', return_value=mock_serial) as p:
         out, err = microfs.execute(command)

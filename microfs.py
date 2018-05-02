@@ -56,16 +56,32 @@ def raw_on(serial):
     """
     Puts the device into raw mode.
     """
-    attempts_left = 3
-    while attempts_left:
-        serial.write(b'\x03')    # Send CTRL-C to break out of loop.
-        if serial.read_until(b'\n>>>').endswith(b'\n>>>'):
-            break
-        attempts_left -= 1
-    else:
-        raise IOError('Could not enter REPL mode.')
-    serial.write(b'\x01')        # Go into raw mode.
-    serial.read_until(b'\r\n>')  # Flush buffer until raw mode prompt.
+    # Send CTRL-B to end raw mode if required.
+    serial.write(b'\x02')
+    # Send CTRL-C twice to break out of loop.
+    serial.write(b'\r\x03\x03')
+    # Flush input (without relying on serial.flushInput())
+    n = serial.inWaiting()
+    while n > 0:
+        serial.read(n)
+        n = serial.inWaiting()
+    # Go into raw mode.
+    serial.write(b'\r\x01')
+    # Flush
+    data = serial.read_until(b'raw REPL; CTRL-B to exit\r\n>')
+    if not data.endswith(b'raw REPL; CTRL-B to exit\r\n>'):
+        print(data)
+        raise IOError('Could not enter raw REPL.')
+    # Soft Reset with CTRL-D
+    serial.write(b'\x04')
+    data = serial.read_until(b'soft reboot\r\n')
+    if not data.endswith(b'soft reboot\r\n'):
+        print(data)
+        raise IOError('Could not enter raw REPL.')
+    data = serial.read_until(b'raw REPL; CTRL-B to exit\r\n>')
+    if not data.endswith(b'raw REPL; CTRL-B to exit\r\n>'):
+        print(data)
+        raise IOError('Could not enter raw REPL.')
 
 
 def raw_off(serial):
@@ -73,6 +89,7 @@ def raw_off(serial):
     Takes the device out of raw mode.
     """
     serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
+    serial.write(b'\x04')  # Send CTRL-D to restart.
 
 
 def get_serial():
