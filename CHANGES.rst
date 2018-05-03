@@ -1,6 +1,13 @@
 Release History
 ===============
 
+1.2.3
+-----
+
+* Extensive debugging and a fix by Carlos Pereira Atencio to ensure that serial
+  connections are opened, closed and made ready for microfs related commands in
+  a robust manner.
+
 1.2.2
 -----
 
