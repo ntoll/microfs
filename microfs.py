@@ -58,14 +58,15 @@ def raw_on(serial):
     """
     # Send CTRL-B to end raw mode if required.
     serial.write(b'\x02')
-    # Send CTRL-C twice to break out of loop.
-    serial.write(b'\r\x03\x03')
+    # Send CTRL-C three times between pauses to break out of loop.
+    for i in range(3):
+        serial.write(b'\r\x03')
+        time.sleep(0.01)
     # Flush input (without relying on serial.flushInput())
     n = serial.inWaiting()
     while n > 0:
         serial.read(n)
         n = serial.inWaiting()
-    serial.read_until()
     # Go into raw mode with CTRL-A.
     serial.write(b'\r\x01')
     # Flush
@@ -117,8 +118,10 @@ def execute(commands, serial=None):
     """
     if serial is None:
         serial = get_serial()
+    time.sleep(0.1)
     result = b''
     raw_on(serial)
+    time.sleep(0.1)
     # Write the actual command and send CTRL-D to evaluate.
     for command in commands:
         command_bytes = command.encode('utf-8')
@@ -131,7 +134,10 @@ def execute(commands, serial=None):
         result += out
         if err:
             return b'', err
+    time.sleep(0.1)
     raw_off(serial)
+    time.sleep(0.1)
+    serial.close()
     return result, err
 
 
