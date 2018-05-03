@@ -118,9 +118,8 @@ def test_raw_off():
     """
     mock_serial = mock.MagicMock()
     microfs.raw_off(mock_serial)
-    assert mock_serial.write.call_count == 2
+    assert mock_serial.write.call_count == 1
     assert mock_serial.write.call_args_list[0][0][0] == b'\x02'
-    assert mock_serial.write.call_args_list[1][0][0] == b'\x04'
 
 
 def test_get_serial():
@@ -204,18 +203,15 @@ def test_execute_no_serial():
     attempts to get_serial().
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
-    data = [
-        b'raw REPL; CTRL-B to exit\r\n>',
-        b'soft reboot\r\n',
-        b'raw REPL; CTRL-B to exit\r\n>',
-        b'OK\x04Error\x04>',
-    ]
-    mock_serial.read_until.side_effect = data
-    command = 'import os; os.listdir()'
-    with mock.patch('microfs.get_serial', return_value=mock_serial) as p:
-        out, err = microfs.execute(command)
+    mock_serial.read_until = mock.MagicMock(side_effect=[b'OK\x04\x04>',
+                                                         b'OK[]\x04\x04>'])
+    commands = ['import os', 'os.listdir()', ]
+    with mock.patch('microfs.get_serial', return_value=mock_serial) as p, \
+            mock.patch('microfs.raw_on', return_value=None), \
+            mock.patch('microfs.raw_off', return_value=None):
+        out, err = microfs.execute(commands)
         p.assert_called_once_with()
+        mock_serial.close.assert_called_once_with()
 
 
 def test_clean_error():

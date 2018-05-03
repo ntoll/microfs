@@ -91,7 +91,6 @@ def raw_off(serial):
     Takes the device out of raw mode.
     """
     serial.write(b'\x02')  # Send CTRL-B to get out of raw mode.
-    serial.write(b'\x04')  # Send CTRL-D to restart.
 
 
 def get_serial():
@@ -116,9 +115,11 @@ def execute(commands, serial=None):
 
     Returns the stdout and stderr output from the micro:bit.
     """
+    close_serial = False
     if serial is None:
         serial = get_serial()
-    time.sleep(0.1)
+        close_serial = True
+        time.sleep(0.1)
     result = b''
     raw_on(serial)
     time.sleep(0.1)
@@ -136,8 +137,9 @@ def execute(commands, serial=None):
             return b'', err
     time.sleep(0.1)
     raw_off(serial)
-    time.sleep(0.1)
-    serial.close()
+    if close_serial:
+        serial.close()
+        time.sleep(0.1)
     return result, err
 
 
