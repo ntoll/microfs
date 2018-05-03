@@ -152,7 +152,7 @@ def clean_error(err):
         decoded = err.decode('utf-8')
         try:
             return decoded.split('\r\n')[-2]
-        except:
+        except Exception:
             return decoded
     return 'There was an error.'
 
@@ -247,7 +247,7 @@ def get(filename, target=None, serial=None):
         "f = open('{}', 'rb')".format(filename),
         "r = f.read",
         "result = True",
-        "while result:\n    result = r(32)\n    if result:\n        " +
+        "while result:\n    result = r(32)\n    if result:\n        "
         "uart.write(result)\n",
         "f.close()",
     ]

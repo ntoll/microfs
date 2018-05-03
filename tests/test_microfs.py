@@ -25,8 +25,8 @@ def test_find_micro_bit():
     """
     port = ['/dev/ttyACM3',
             'MBED CMSIS-DAP',
-            'USB_CDC USB VID:PID=0D28:0204 ' +
-            'SER=9900023431864e45000e10050000005b00000000cc4d28bd ' +
+            'USB_CDC USB VID:PID=0D28:0204 '
+            'SER=9900023431864e45000e10050000005b00000000cc4d28bd '
             'LOCATION=4-1.2']
     ports = [port, ]
     with mock.patch('microfs.list_serial_ports', return_value=ports):
@@ -40,8 +40,8 @@ def test_find_micro_bit_no_device():
     """
     port = ['/dev/ttyACM3',
             'MBED NOT-MICROBIT',
-            'USB_CDC USB VID:PID=0D29:0205 ' +
-            'SER=9900023431864e45000e10050000005b00000000cc4d28de ' +
+            'USB_CDC USB VID:PID=0D29:0205 '
+            'SER=9900023431864e45000e10050000005b00000000cc4d28de '
             'LOCATION=4-1.3']
     ports = [port, ]
     with mock.patch('microfs.list_serial_ports', return_value=ports):
