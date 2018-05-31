@@ -416,19 +416,18 @@ def test_get():
     the local file system with the expected content.
     """
     mock_serial = mock.MagicMock()
+    commands = [
+        "from microbit import uart",
+        "f = open('{}', 'rb')".format('hello.txt'),
+        "r = f.read",
+        "result = True",
+        "while result:\n result = r(32)\n if result:\n  uart.write(result)\n",
+        "f.close()",
+    ]
     with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
         mo = mock.mock_open()
         with mock.patch('microfs.open', mo, create=True):
             assert microfs.get('hello.txt', 'local.txt', mock_serial)
-            commands = [
-                "from microbit import uart",
-                "f = open('{}', 'rb')".format('hello.txt'),
-                "r = f.read",
-                "result = True",
-                "while result:\n    result = r(32)\n    if result:\n        "
-                "uart.write(result)\n",
-                "f.close()",
-            ]
             exe.assert_called_once_with(commands, mock_serial)
             mo.assert_called_once_with('local.txt', 'wb')
             handle = mo()
@@ -441,19 +440,18 @@ def test_get_no_target():
     the local file system with the expected content. In this case, since no
     target is provided, use the name of the remote file.
     """
+    commands = [
+        "from microbit import uart",
+        "f = open('{}', 'rb')".format('hello.txt'),
+        "r = f.read",
+        "result = True",
+        "while result:\n result = r(32)\n if result:\n  uart.write(result)\n",
+        "f.close()",
+    ]
     with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
         mo = mock.mock_open()
         with mock.patch('microfs.open', mo, create=True):
             assert microfs.get('hello.txt')
-            commands = [
-                "from microbit import uart",
-                "f = open('{}', 'rb')".format('hello.txt'),
-                "r = f.read",
-                "result = True",
-                "while result:\n    result = r(32)\n    if result:\n        "
-                "uart.write(result)\n",
-                "f.close()",
-            ]
             exe.assert_called_once_with(commands, None)
             mo.assert_called_once_with('hello.txt', 'wb')
             handle = mo()
