@@ -1,6 +1,14 @@
 Release History
 ===============
 
+1.3.0
+-----
+
+* Added a new function (not available via the command line) to get the version
+  of MicroPython on the device.
+* **API CHANGE** The find_microbit function now returns a tuple with position 0
+  as the port and position 1 as the serial number of the connected device.
+
 1.2.3
 -----
 
@@ -11,7 +19,8 @@ Release History
 1.2.2
 -----
 
-* The get and put commands optionally take a further argument to specify the name of the target file.
+* The get and put commands optionally take a further argument to specify the
+  name of the target file.
 
 1.2.1
 -----

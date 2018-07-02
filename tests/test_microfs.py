@@ -21,17 +21,33 @@ else:
 
 def test_find_micro_bit():
     """
-    If a micro:bit is connected (according to PySerial) return the port.
+    If a micro:bit is connected (according to PySerial) return the port and
+    serial number.
     """
-    port = ['/dev/ttyACM3',
-            'MBED CMSIS-DAP',
-            'USB_CDC USB VID:PID=0D28:0204 '
-            'SER=9900023431864e45000e10050000005b00000000cc4d28bd '
-            'LOCATION=4-1.2']
+
+    class FakePort:
+        """
+        Pretends to be a representation of a port in PySerial.
+        """
+
+        def __init__(self, port_info, serial_number):
+            self.port_info = port_info
+            self.serial_number = serial_number
+
+        def __getitem__(self, key):
+            return self.port_info[key]
+
+    serial_number = '9900023431864e45000e10050000005b00000000cc4d28bd'
+    port_info = ['/dev/ttyACM3',
+                 'MBED CMSIS-DAP',
+                 'USB_CDC USB VID:PID=0D28:0204 '
+                 'SER=9900023431864e45000e10050000005b00000000cc4d28bd '
+                 'LOCATION=4-1.2']
+    port = FakePort(port_info, serial_number)
     ports = [port, ]
     with mock.patch('microfs.list_serial_ports', return_value=ports):
         result = microfs.find_microbit()
-        assert result == '/dev/ttyACM3'
+        assert result == ('/dev/ttyACM3', serial_number)
 
 
 def test_find_micro_bit_no_device():
@@ -46,7 +62,7 @@ def test_find_micro_bit_no_device():
     ports = [port, ]
     with mock.patch('microfs.list_serial_ports', return_value=ports):
         result = microfs.find_microbit()
-        assert result is None
+        assert result == (None, None)
 
 
 def test_raw_on():
@@ -111,6 +127,49 @@ def test_raw_on_failures():
     assert ex.value.args[0] == 'Could not enter raw REPL.'
 
 
+def test_raw_on_failures_command_line_flag_on():
+    """
+    If the COMMAND_LINE_FLAG is True, ensure the last data received is output
+    via the print statemen for debugging purposes.
+    """
+    with mock.patch('builtins.print') as mock_print, \
+            mock.patch('microfs.COMMAND_LINE_FLAG', True):
+        mock_serial = mock.MagicMock()
+        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        data = [
+            b'raw REPL; CTRL-B to exit\r\n> foo',
+        ]
+        mock_serial.read_until.side_effect = data
+        with pytest.raises(IOError) as ex:
+            microfs.raw_on(mock_serial)
+        mock_print.assert_called_once_with(data[0])
+        assert ex.value.args[0] == 'Could not enter raw REPL.'
+        mock_print.reset_mock()
+
+        data = [
+            b'raw REPL; CTRL-B to exit\r\n>',
+            b'soft reboot\r\n foo',
+        ]
+        mock_serial.read_until.side_effect = data
+        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        with pytest.raises(IOError) as ex:
+            microfs.raw_on(mock_serial)
+        mock_print.assert_called_once_with(data[1])
+        assert ex.value.args[0] == 'Could not enter raw REPL.'
+        mock_print.reset_mock()
+        data = [
+            b'raw REPL; CTRL-B to exit\r\n>',
+            b'soft reboot\r\n',
+            b'raw REPL; CTRL-B to exit\r\n> foo',
+        ]
+        mock_serial.read_until.side_effect = data
+        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        with pytest.raises(IOError) as ex:
+            microfs.raw_on(mock_serial)
+        mock_print.assert_called_once_with(data[2])
+        assert ex.value.args[0] == 'Could not enter raw REPL.'
+
+
 def test_raw_off():
     """
     Check that the expected commands are sent to the device to take
@@ -128,7 +187,9 @@ def test_get_serial():
     to the device.
     """
     mock_serial = mock.MagicMock()
-    with mock.patch('microfs.find_microbit', return_value='/dev/ttyACM3'), \
+    mock_result = ('/dev/ttyACM3',
+                   '9900000031864e45003c10070000006e0000000097969901')
+    with mock.patch('microfs.find_microbit', return_value=mock_result), \
             mock.patch('microfs.Serial', return_value=mock_serial):
         result = microfs.get_serial()
         assert result == mock_serial
@@ -138,7 +199,7 @@ def test_get_serial_no_port():
     """
     An IOError should be raised if no micro:bit is found.
     """
-    with mock.patch('microfs.find_microbit', return_value=None):
+    with mock.patch('microfs.find_microbit', return_value=(None, None)):
         with pytest.raises(IOError) as ex:
             microfs.get_serial()
     assert ex.value.args[0] == 'Could not find micro:bit.'
@@ -467,6 +528,54 @@ def test_get_with_error():
         with pytest.raises(IOError) as ex:
             microfs.get('foo.txt', mock_serial)
     assert ex.value.args[0] == 'error'
+
+
+def test_version_good_output():
+    """
+    Ensure the version method returns the expected result when the response
+    from the device is the expected bytes.
+    """
+    response = (b'(sysname=\'microbit\', nodename=\'microbit\', '
+                b'release=\'1.0\', '
+                b'version="micro:bit v1.0-b\'e10a5ff\' on 2018-6-8; '
+                b'MicroPython v1.9.2-34-gd64154c73 on 2017-09-01", '
+                b'machine=\'micro:bit with nRF51822\')')
+    mock_serial = mock.MagicMock()
+    with mock.patch('microfs.execute', return_value=(response,
+                                                     b'')) as execute:
+        result = microfs.version(mock_serial)
+        assert result['sysname'] == 'microbit'
+        assert result['nodename'] == 'microbit'
+        assert result['release'] == '1.0'
+        assert result['version'] == ("micro:bit v1.0-b'e10a5ff' on "
+                                     "2018-6-8; "
+                                     "MicroPython v1.9.2-34-gd64154c73 on "
+                                     "2017-09-01")
+        assert result['machine'] == 'micro:bit with nRF51822'
+        execute.assert_called_once_with(['import os',
+                                        'print(os.uname())', ], mock_serial)
+
+
+def test_version_with_std_err_output():
+    """
+    Ensure a ValueError is raised if stderr returns something.
+    """
+    mock_serial = mock.MagicMock()
+    with mock.patch('microfs.execute', return_value=(b'', b'error')):
+        with pytest.raises(ValueError) as ex:
+            microfs.version(mock_serial)
+    assert ex.value.args[0] == 'error'
+
+
+def test_version_encountered_unknown_problem_when_executing_commands():
+    """
+    Ensure a ValueError is raised if some other error was encountered when
+    trying to connect to the device and read the output of os.uname.
+    """
+    mock_serial = mock.MagicMock()
+    with mock.patch('microfs.execute', side_effect=IOError('boom')):
+        with pytest.raises(ValueError):
+            microfs.version(mock_serial)
 
 
 def test_main_no_args():
