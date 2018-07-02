@@ -539,7 +539,7 @@ def test_version_good_output():
                 b'release=\'1.0\', '
                 b'version="micro:bit v1.0-b\'e10a5ff\' on 2018-6-8; '
                 b'MicroPython v1.9.2-34-gd64154c73 on 2017-09-01", '
-                b'machine=\'micro:bit with nRF51822\')')
+                b'machine=\'micro:bit with nRF51822\')\r\n')
     mock_serial = mock.MagicMock()
     with mock.patch('microfs.execute', return_value=(response,
                                                      b'')) as execute:

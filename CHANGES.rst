@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.3.1
+-----
+
+* Fix bug in version parsing that was mangling the ``machine`` attribute.
+
 1.3.0
 -----
 
