@@ -71,7 +71,7 @@ def test_raw_on():
     raw mode.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    mock_serial.inWaiting.return_value = 0
     data = [
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
@@ -79,7 +79,7 @@ def test_raw_on():
     ]
     mock_serial.read_until.side_effect = data
     microfs.raw_on(mock_serial)
-    assert mock_serial.inWaiting.call_count == 5
+    assert mock_serial.inWaiting.call_count == 2
     assert mock_serial.write.call_count == 6
     assert mock_serial.write.call_args_list[0][0][0] == b'\x02'
     assert mock_serial.write.call_args_list[1][0][0] == b'\r\x03'
@@ -91,6 +91,30 @@ def test_raw_on():
     assert mock_serial.read_until.call_args_list[0][0][0] == data[0]
     assert mock_serial.read_until.call_args_list[1][0][0] == data[1]
     assert mock_serial.read_until.call_args_list[2][0][0] == data[2]
+
+    mock_serial.reset_mock()
+    data = [
+        b'raw REPL; CTRL-B to exit\r\n>',
+        b'soft reboot\r\n',
+        b'foo\r\n',
+        b'raw REPL; CTRL-B to exit\r\n>',
+    ]
+    mock_serial.read_until.side_effect = data
+    microfs.raw_on(mock_serial)
+    assert mock_serial.inWaiting.call_count == 2
+    assert mock_serial.write.call_count == 7
+    assert mock_serial.write.call_args_list[0][0][0] == b'\x02'
+    assert mock_serial.write.call_args_list[1][0][0] == b'\r\x03'
+    assert mock_serial.write.call_args_list[2][0][0] == b'\r\x03'
+    assert mock_serial.write.call_args_list[3][0][0] == b'\r\x03'
+    assert mock_serial.write.call_args_list[4][0][0] == b'\r\x01'
+    assert mock_serial.write.call_args_list[5][0][0] == b'\x04'
+    assert mock_serial.write.call_args_list[6][0][0] == b'\r\x01'
+    assert mock_serial.read_until.call_count == 4
+    assert mock_serial.read_until.call_args_list[0][0][0] == data[0]
+    assert mock_serial.read_until.call_args_list[1][0][0] == data[1]
+    assert mock_serial.read_until.call_args_list[2][0][0] == data[3]
+    assert mock_serial.read_until.call_args_list[3][0][0] == data[3]
 
 
 def test_raw_on_failures():
@@ -118,10 +142,12 @@ def test_raw_on_failures():
     data = [
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
-        b'raw REPL; CTRL-B to exit\r\n> foo',
+        b'foo',
+        b'foo',
     ]
     mock_serial.read_until.side_effect = data
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    mock_serial.inWaiting.side_effect = None
+    mock_serial.inWaiting.return_value = 0
     with pytest.raises(IOError) as ex:
         microfs.raw_on(mock_serial)
     assert ex.value.args[0] == 'Could not enter raw REPL.'
@@ -160,13 +186,15 @@ def test_raw_on_failures_command_line_flag_on():
         data = [
             b'raw REPL; CTRL-B to exit\r\n>',
             b'soft reboot\r\n',
-            b'raw REPL; CTRL-B to exit\r\n> foo',
+            b'foo',
+            b'foo',
         ]
         mock_serial.read_until.side_effect = data
-        mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+        mock_serial.inWaiting.side_effect = None
+        mock_serial.inWaiting.return_value = 0
         with pytest.raises(IOError) as ex:
             microfs.raw_on(mock_serial)
-        mock_print.assert_called_once_with(data[2])
+        mock_print.assert_called_once_with(data[3])
         assert ex.value.args[0] == 'Could not enter raw REPL.'
 
 
@@ -242,7 +270,7 @@ def test_execute_err_result():
     returned as such by the execute function.
     """
     mock_serial = mock.MagicMock()
-    mock_serial.inWaiting.side_effect = [5, 3, 2, 1, 0]
+    mock_serial.inWaiting.return_value = 0
     data = [
         b'raw REPL; CTRL-B to exit\r\n>',
         b'soft reboot\r\n',
@@ -478,11 +506,22 @@ def test_get():
     """
     mock_serial = mock.MagicMock()
     commands = [
-        "from microbit import uart",
+        "\n".join([
+            "try:",
+            " from microbit import uart as u",
+            "except ImportError:",
+            " try:",
+            "  from machine import UART",
+            "  u = UART(0, {})".format(microfs.SERIAL_BAUD_RATE),
+            " except Exception:",
+            "  try:",
+            "   from sys import stdout as u",
+            "  except Exception:",
+            "   raise Exception('Could not find UART module in device.')"]),
         "f = open('{}', 'rb')".format('hello.txt'),
         "r = f.read",
         "result = True",
-        "while result:\n result = r(32)\n if result:\n  uart.write(result)\n",
+        "while result:\n result = r(32)\n if result:\n  u.write(result)\n",
         "f.close()",
     ]
     with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
@@ -502,11 +541,22 @@ def test_get_no_target():
     target is provided, use the name of the remote file.
     """
     commands = [
-        "from microbit import uart",
+        "\n".join([
+            "try:",
+            " from microbit import uart as u",
+            "except ImportError:",
+            " try:",
+            "  from machine import UART",
+            "  u = UART(0, {})".format(microfs.SERIAL_BAUD_RATE),
+            " except Exception:",
+            "  try:",
+            "   from sys import stdout as u",
+            "  except Exception:",
+            "   raise Exception('Could not find UART module in device.')"]),
         "f = open('{}', 'rb')".format('hello.txt'),
         "r = f.read",
         "result = True",
-        "while result:\n result = r(32)\n if result:\n  uart.write(result)\n",
+        "while result:\n result = r(32)\n if result:\n  u.write(result)\n",
         "f.close()",
     ]
     with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
