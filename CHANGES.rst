@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.4.1
+-----
+
+* Clamp PySerial version to use with microfs to a version known to work.
+
 1.4.0
 -----
 
