@@ -665,9 +665,9 @@ def test_main_ls_no_files():
     with mock.patch('microfs.ls', return_value=[]) as mock_ls, \
             mock.patch('microfs.get_serial', return_value=mock_class), \
             mock.patch.object(builtins, 'print') as mock_print:
-            microfs.main(argv=['ls'])
-            mock_ls.assert_called_once_with()
-            assert mock_print.call_count == 0
+        microfs.main(argv=['ls'])
+        mock_ls.assert_called_once_with()
+        assert mock_print.call_count == 0
 
 
 def test_main_rm():
