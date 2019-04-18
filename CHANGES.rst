@@ -1,6 +1,13 @@
 Release History
 ===============
 
+1.4.0
+-----
+
+* Updated and changed the ``get`` functionality to work on a wider range of
+  supported boards. Many thanks to Carlos Pereira Atencio for putting in the
+  effort to make this happen.
+
 1.3.1
 -----
 
