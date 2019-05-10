@@ -43,7 +43,7 @@ For example, 'ufs ls' will list the files on a connected BBC micro:bit.
 
 COMMAND_LINE_FLAG = False  # Indicates running from the command line.
 SERIAL_BAUD_RATE = 115200
-
+port_option = None
 
 def find_microbit():
     """
@@ -51,10 +51,14 @@ def find_microbit():
     connected micro:bit device. If no device is connected the tuple will be
     (None, None).
     """
+    global port_option
     ports = list_serial_ports()
     for port in ports:
         if "VID:PID=0D28:0204" in port[2].upper():
-            return (port[0], port.serial_number)
+            if port_option is None:
+                return (port[0], port.serial_number)
+            elif port[0] == port_option:
+                return (port[0], port.serial_number)
     return (None, None)
 
 
@@ -330,6 +334,7 @@ def main(argv=None):
 
     Exceptions are caught and printed for the user.
     """
+    global port_option
     if not argv:
         argv = sys.argv[1:]
     try:
@@ -342,7 +347,11 @@ def main(argv=None):
                             help="Use when a file needs referencing.")
         parser.add_argument('target', nargs='?', default=None,
                             help="Use to specify a target filename.")
+        parser.add_argument('--port',dest='port', type=str , default=None,
+                            help='Specify which port to use.')
+
         args = parser.parse_args(argv)
+        port_option = args.port
         if args.command == 'ls':
             list_of_files = ls()
             if list_of_files:
@@ -368,3 +377,6 @@ def main(argv=None):
     except Exception as ex:
         # The exception of no return. Print exception information.
         print(ex)
+
+if __name__  == '__main__':
+    main()
