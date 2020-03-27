@@ -8,7 +8,6 @@ all:
 	@echo "make pycodestyle - run the pycodestyle style checker."
 	@echo "make test - run the test suite."
 	@echo "make coverage - view a report on test coverage."
-	@echo "make tidy - tidy code with the 'black' formatter."
 	@echo "make check - run all the checkers and tests."
 	@echo "make package - create a deployable package for the project."
 	@echo "make publish - publish the project to PyPI."
@@ -35,12 +34,6 @@ test: clean
 
 coverage: clean
 	py.test --cov-report term-missing --cov=microfs tests/
-
-tidy: clean
-	@echo "\nTidying code with black..."
-	black -l 79 setup.py
-	black -l 79 tests
-	black -l 79 microfs.py
 
 check: clean pycodestyle pyflakes coverage
 
