@@ -8,6 +8,7 @@ all:
 	@echo "make pycodestyle - run the pycodestyle style checker."
 	@echo "make test - run the test suite."
 	@echo "make coverage - view a report on test coverage."
+	@echo "make tidy - tidy code with the 'black' formatter."
 	@echo "make check - run all the checkers and tests."
 	@echo "make package - create a deployable package for the project."
 	@echo "make publish - publish the project to PyPI."
@@ -27,13 +28,19 @@ pyflakes:
 	find . \( -name _build -o -name var -o -path ./docs \) -type d -prune -o -name '*.py' -print0 | $(XARGS) pyflakes
 
 pycodestyle:
-	find . \( -name _build -o -name var \) -type d -prune -o -name '*.py' -print0 | $(XARGS) -n 1 pycodestyle --repeat --exclude=build/*,docs/*,setup.py --ignore=E731,E402
+	find . \( -name _build -o -name var \) -type d -prune -o -name '*.py' -print0 | $(XARGS) -n 1 pycodestyle --repeat --exclude=build/*,docs/*,setup.py --ignore=E731,E402,E231
 
 test: clean
 	py.test
 
 coverage: clean
 	py.test --cov-report term-missing --cov=microfs tests/
+
+tidy: clean
+	@echo "\nTidying code with black..."
+	black -l 79 setup.py
+	black -l 79 tests
+	black -l 79 microfs.py
 
 check: clean pycodestyle pyflakes coverage
 
