@@ -1,6 +1,13 @@
 Release History
 ===============
 
+1.4.2
+-----
+
+* Update getting of data from micro:bit device to deal with control characters
+  found within the file on the device. Thanks to Damien George for the fix and
+  to GitHub user alexandros769 for reporting it.
+
 1.4.1
 -----
 

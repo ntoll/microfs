@@ -521,10 +521,14 @@ def test_get():
         "f = open('{}', 'rb')".format('hello.txt'),
         "r = f.read",
         "result = True",
-        "while result:\n result = r(32)\n if result:\n  u.write(result)\n",
+        "\n".join([
+            "while result:"
+            " result = r(32)"
+            " if result:"
+            "  u.write(repr(result))"]),
         "f.close()",
     ]
-    with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
+    with mock.patch('microfs.execute', return_value=(b"b'hello'", b'')) as exe:
         mo = mock.mock_open()
         with mock.patch('microfs.open', mo, create=True):
             assert microfs.get('hello.txt', 'local.txt', mock_serial)
@@ -556,10 +560,14 @@ def test_get_no_target():
         "f = open('{}', 'rb')".format('hello.txt'),
         "r = f.read",
         "result = True",
-        "while result:\n result = r(32)\n if result:\n  u.write(result)\n",
+        "\n".join([
+            "while result:"
+            " result = r(32)"
+            " if result:"
+            "  u.write(repr(result))"]),
         "f.close()",
     ]
-    with mock.patch('microfs.execute', return_value=(b'hello', b'')) as exe:
+    with mock.patch('microfs.execute', return_value=(b"b'hello'", b'')) as exe:
         mo = mock.mock_open()
         with mock.patch('microfs.open', mo, create=True):
             assert microfs.get('hello.txt')

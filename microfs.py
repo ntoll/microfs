@@ -273,13 +273,20 @@ def get(filename, target=None, serial=None):
         "f = open('{}', 'rb')".format(filename),
         "r = f.read",
         "result = True",
-        "while result:\n result = r(32)\n if result:\n  u.write(result)\n",
+        "\n".join([
+            "while result:"
+            " result = r(32)"
+            " if result:"
+            "  u.write(repr(result))"]),
         "f.close()",
     ]
     out, err = execute(commands, serial)
     if err:
         raise IOError(clean_error(err))
     # Recombine the bytes while removing "b'" from start and "'" from end.
+    assert out.startswith(b"b'")
+    assert out.endswith(b"'")
+    out = eval(b"".join(out.split(b"'b'")))
     with open(target, 'wb') as f:
         f.write(out)
     return True
