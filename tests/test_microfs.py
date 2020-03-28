@@ -559,10 +559,10 @@ def test_get():
         "result = True",
         "\n".join(
             [
-                "while result:"
-                " result = r(32)"
-                " if result:"
-                "  u.write(repr(result))"
+                "while result:",
+                " result = r(32)",
+                " if result:",
+                "  u.write(repr(result))",
             ]
         ),
         "f.close()",
@@ -604,10 +604,10 @@ def test_get_no_target():
         "result = True",
         "\n".join(
             [
-                "while result:"
-                " result = r(32)"
-                " if result:"
-                "  u.write(repr(result))"
+                "while result:",
+                " result = r(32)",
+                " if result:",
+                "  u.write(repr(result))",
             ]
         ),
         "f.close()",

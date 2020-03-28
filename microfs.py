@@ -275,10 +275,10 @@ def get(filename, target=None, serial=None):
         "result = True",
         "\n".join(
             [
-                "while result:"
-                " result = r(32)"
-                " if result:"
-                "  u.write(repr(result))"
+                "while result:",
+                " result = r(32)",
+                " if result:",
+                "  u.write(repr(result))",
             ]
         ),
         "f.close()",
