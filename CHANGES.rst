@@ -1,6 +1,11 @@
 Release History
 ===============
 
+1.4.3
+-----
+
+* Bug fix. See commentary in issue #22. Thanks again to alexandros769.
+
 1.4.2
 -----
 
