@@ -345,7 +345,7 @@ def main(argv=None):
         parser = argparse.ArgumentParser(description=_HELP_TEXT)
         parser.add_argument(
             "command",
-            nargs="?",
+            nargs="+",
             default=None,
             help="One of 'ls', 'rm', 'put' or 'get'.",
         )
@@ -362,10 +362,15 @@ def main(argv=None):
             help="Use to specify a target filename.",
         )
         args = parser.parse_args(argv)
-        if args.command == "ls":
-            list_of_files = ls()
-            if list_of_files:
-                print(" ".join(list_of_files))
+        if type(args.command) is list:
+            if args.command[0] == "ls":
+                list_of_files = ls()
+                # get optional second parameter as delimiter
+                delim = ' '  # default it as space ' '
+                if len(args.command) > 1:
+                    delim = args.command[1]
+                if list_of_files:
+                    print(delim.join(list_of_files))
         elif args.command == "rm":
             if args.path:
                 rm(args.path)
