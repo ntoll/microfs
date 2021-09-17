@@ -345,7 +345,7 @@ def main(argv=None):
 
         parser = argparse.ArgumentParser(description=_HELP_TEXT)
         subparsers = parser.add_subparsers(
-            dest='command', help="One of 'ls', 'rm', 'put', 'get', or reset.")
+            dest='command', help="One of 'ls', 'rm', 'put' or 'get'")
 
         ls_parser = subparsers.add_parser("ls")
         ls_parser.add_argument("delimiter", nargs="?", default=' ',
