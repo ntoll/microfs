@@ -1,6 +1,12 @@
 Release History
 ===============
 
+1.4.4
+-----
+
+* New feature. Thanks to @makinteract, it is possible to add an optional
+  delimeter for the ``ls`` command. Please see PR #28 for more details.
+
 1.4.3
 -----
 
