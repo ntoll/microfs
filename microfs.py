@@ -142,7 +142,7 @@ def execute(commands, serial=None):
     for command in commands:
         command_bytes = command.encode("utf-8")
         for i in range(0, len(command_bytes), 32):
-            serial.write(command_bytes[i:min(i + 32, len(command_bytes))])
+            serial.write(command_bytes[i: min(i + 32, len(command_bytes))])
             time.sleep(0.01)
         serial.write(b"\x04")
         response = serial.read_until(b"\x04>")  # Read until prompt.
@@ -182,7 +182,13 @@ def ls(serial=None):
     Returns a list of the files on the connected device or raises an IOError if
     there's a problem.
     """
-    out, err = execute(["import os", "print(os.listdir())",], serial)
+    out, err = execute(
+        [
+            "import os",
+            "print(os.listdir())",
+        ],
+        serial,
+    )
     if err:
         raise IOError(clean_error(err))
     return ast.literal_eval(out.decode("utf-8"))
@@ -307,7 +313,13 @@ def version(serial=None):
     there was a problem parsing the output.
     """
     try:
-        out, err = execute(["import os", "print(os.uname())",], serial)
+        out, err = execute(
+            [
+                "import os",
+                "print(os.uname())",
+            ],
+            serial,
+        )
         if err:
             raise ValueError(clean_error(err))
     except ValueError:
@@ -345,29 +357,39 @@ def main(argv=None):
 
         parser = argparse.ArgumentParser(description=_HELP_TEXT)
         subparsers = parser.add_subparsers(
-            dest='command', help="One of 'ls', 'rm', 'put' or 'get'")
+            dest="command", help="One of 'ls', 'rm', 'put' or 'get'"
+        )
 
         ls_parser = subparsers.add_parser("ls")
-        ls_parser.add_argument("delimiter", nargs="?", default=' ',
-                               help="Specify a delimiter string (default is whitespace). Eg. \";\"")
+        ls_parser.add_argument(
+            "delimiter",
+            nargs="?",
+            default=" ",
+            help='Specify a delimiter string (default is whitespace). Eg. ";"',
+        )
 
         rm_parser = subparsers.add_parser("rm")
         rm_parser.add_argument(
-            "path", nargs="?", help="Specify a target filename.")
+            "path", nargs="?", help="Specify a target filename."
+        )
 
         get_parser = subparsers.add_parser("get")
         get_parser.add_argument(
-            "path", nargs="?", help="Use when a file needs referencing.")
-        get_parser.add_argument("target", nargs="?",
-                                help="Specify a target filename.")
+            "path", nargs="?", help="Use when a file needs referencing."
+        )
+        get_parser.add_argument(
+            "target", nargs="?", help="Specify a target filename."
+        )
 
         put_parser = subparsers.add_parser("put")
         put_parser.add_argument(
-            "path", nargs="?", help="Use when a file needs referencing.")
-        put_parser.add_argument("target", nargs="?",
-                                help="Specify a target filename.")
+            "path", nargs="?", help="Use when a file needs referencing."
+        )
+        put_parser.add_argument(
+            "target", nargs="?", help="Specify a target filename."
+        )
 
-        args = parser.parse_args(argv) 
+        args = parser.parse_args(argv)
         if args.command == "ls":
             list_of_files = ls()
             if list_of_files:
