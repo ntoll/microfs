@@ -374,7 +374,32 @@ def test_ls():
         result = microfs.ls(mock_serial)
         assert result == ["a.txt"]
         execute.assert_called_once_with(
-            ["import os", "print(os.listdir())",], mock_serial
+            [
+                "import os",
+                "print(os.listdir())",
+            ],
+            mock_serial,
+        )
+
+
+def test_ls_width_delimiter():
+    """
+    If a delimiter is provided, ensure that the result from stdout is
+    equivalent to the list returned by Python.
+    """
+    mock_serial = mock.MagicMock()
+    with mock.patch(
+        "microfs.execute", return_value=(b"[ 'a.txt','b.txt']\r\n", b"")
+    ) as execute:
+        result = microfs.ls(mock_serial)
+        delimitedResult = ";".join(result)
+        assert delimitedResult == "a.txt;b.txt"
+        execute.assert_called_once_with(
+            [
+                "import os",
+                "print(os.listdir())",
+            ],
+            mock_serial,
         )
 
 
@@ -397,7 +422,11 @@ def test_rm():
     with mock.patch("microfs.execute", return_value=(b"", b"")) as execute:
         assert microfs.rm("foo", mock_serial)
         execute.assert_called_once_with(
-            ["import os", "os.remove('foo')",], mock_serial
+            [
+                "import os",
+                "os.remove('foo')",
+            ],
+            mock_serial,
         )
 
 
@@ -661,7 +690,11 @@ def test_version_good_output():
         )
         assert result["machine"] == "micro:bit with nRF51822"
         execute.assert_called_once_with(
-            ["import os", "print(os.uname())",], mock_serial
+            [
+                "import os",
+                "print(os.uname())",
+            ],
+            mock_serial,
         )
 
 
@@ -691,7 +724,12 @@ def test_main_no_args():
     """
     If no args are passed, simply display help.
     """
-    with mock.patch("sys.argv", ["ufs",]):
+    with mock.patch(
+        "sys.argv",
+        [
+            "ufs",
+        ],
+    ):
         mock_parser = mock.MagicMock()
         with mock.patch(
             "microfs.argparse.ArgumentParser", return_value=mock_parser
