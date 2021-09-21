@@ -45,7 +45,7 @@ List the files on the device::
 
     $ ufs ls
 
-You can also specify a delimiter (default is whitespace ' ') to separte file names on the output::
+You can also specify a delimiter to separte file names displayed on the output (default is whitespace ' ')::
 
     # use ';' as a delimiter
     $ ufs ls ';'
