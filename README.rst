@@ -45,6 +45,11 @@ List the files on the device::
 
     $ ufs ls
 
+You can also specify a delimiter (default is whitespace ' ') to separte file names on the output::
+
+    # use ';' as a delimiter
+    $ ufs ls ';'
+
 Delete a file on the device::
 
     $ ufs rm foo.txt

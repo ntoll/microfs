@@ -377,6 +377,21 @@ def test_ls():
             ["import os", "print(os.listdir())",], mock_serial
         )
 
+def test_ls_width_delimiter():
+    """
+    If a delimiter is provided, ensure that the result from stdout is equivalent
+    to the list Python .
+    """
+    mock_serial = mock.MagicMock()
+    with mock.patch(
+        "microfs.execute", return_value=(b"[ 'a.txt','b.txt']\r\n", b"")
+    ) as execute:
+        result = microfs.ls(mock_serial)
+        delimitedResult= ';'.join(result)
+        assert delimitedResult == "a.txt;b.txt"
+        execute.assert_called_once_with(
+            ["import os", "print(os.listdir())",], mock_serial
+        )
 
 def test_ls_with_error():
     """
