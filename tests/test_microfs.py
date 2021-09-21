@@ -380,7 +380,7 @@ def test_ls():
 def test_ls_width_delimiter():
     """
     If a delimiter is provided, ensure that the result from stdout is equivalent
-    to the list Python .
+    to the list returned by Python.
     """
     mock_serial = mock.MagicMock()
     with mock.patch(
