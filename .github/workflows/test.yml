@@ -1,0 +1,29 @@
+name: Run Tests
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.5', '3.6', '3.7', '3.8', '3.9', '3.10']
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} - Py ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+      - run: python setup.py develop
+      - if: runner.os != 'Windows'
+        run: make check
+      - if: runner.os == 'Windows'
+        run: py.test --cov-report term-missing --cov=microfs tests/
