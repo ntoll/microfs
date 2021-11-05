@@ -33,9 +33,13 @@ setup(
     author="Nicholas H.Tollervey",
     author_email="ntoll@ntoll.org",
     url="https://github.com/ntoll/microfs",
-    py_modules=["microfs",],
+    py_modules=[
+        "microfs",
+    ],
     license="MIT",
-    install_requires=["pyserial>=3.0.1,<4.0",],
+    install_requires=[
+        "pyserial>=3.0.1,<4.0",
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",
@@ -53,5 +57,7 @@ setup(
         "Topic :: Education",
         "Topic :: Software Development :: Embedded Systems",
     ],
-    entry_points={"console_scripts": ["ufs=microfs:main"],},
+    entry_points={
+        "console_scripts": ["ufs=microfs:main"],
+    },
 )

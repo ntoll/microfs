@@ -142,7 +142,7 @@ def execute(commands, serial=None):
     for command in commands:
         command_bytes = command.encode("utf-8")
         for i in range(0, len(command_bytes), 32):
-            serial.write(command_bytes[i: min(i + 32, len(command_bytes))])
+            serial.write(command_bytes[i : min(i + 32, len(command_bytes))])
             time.sleep(0.01)
         serial.write(b"\x04")
         response = serial.read_until(b"\x04>")  # Read until prompt.

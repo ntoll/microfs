@@ -793,8 +793,9 @@ def test_main_rm_no_filename():
     message.
     """
     with mock.patch("microfs.rm", return_value=True) as mock_rm:
-        with mock.patch.object(builtins, "print") as mock_print, \
-                pytest.raises(SystemExit) as pytest_exc:
+        with mock.patch.object(builtins, "print") as mock_print, pytest.raises(
+            SystemExit
+        ) as pytest_exc:
             microfs.main(argv=["rm"])
     assert mock_print.call_count == 1
     assert mock_rm.call_count == 0
@@ -823,8 +824,9 @@ def test_main_put_no_filename():
     message.
     """
     with mock.patch("microfs.put", return_value=True) as mock_put:
-        with mock.patch.object(builtins, "print") as mock_print, \
-                pytest.raises(SystemExit) as pytest_exc:
+        with mock.patch.object(builtins, "print") as mock_print, pytest.raises(
+            SystemExit
+        ) as pytest_exc:
             microfs.main(argv=["put"])
     assert mock_print.call_count == 1
     assert mock_put.call_count == 0
@@ -853,8 +855,9 @@ def test_main_get_no_filename():
     message.
     """
     with mock.patch("microfs.get", return_value=True) as mock_get:
-        with mock.patch.object(builtins, "print") as mock_print, \
-                pytest.raises(SystemExit) as pytest_exc:
+        with mock.patch.object(builtins, "print") as mock_print, pytest.raises(
+            SystemExit
+        ) as pytest_exc:
             microfs.main(argv=["get"])
     assert mock_print.call_count == 1
     assert mock_get.call_count == 0

@@ -8,3 +8,5 @@ pyserial>=3.0.1,<4.0
 
 # Mock is bundled as part of unittest since Python 3.3
 mock ; python_version == '2.7'
+# Black is only available for Python 3.6+
+black>=19.10b0;python_version>'3.5'
