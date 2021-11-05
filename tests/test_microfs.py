@@ -793,10 +793,13 @@ def test_main_rm_no_filename():
     message.
     """
     with mock.patch("microfs.rm", return_value=True) as mock_rm:
-        with mock.patch.object(builtins, "print") as mock_print:
+        with mock.patch.object(builtins, "print") as mock_print, \
+                pytest.raises(SystemExit) as pytest_exc:
             microfs.main(argv=["rm"])
-            assert mock_print.call_count == 1
-            assert mock_rm.call_count == 0
+    assert mock_print.call_count == 1
+    assert mock_rm.call_count == 0
+    assert pytest_exc.type == SystemExit
+    assert pytest_exc.value.code == 2
 
 
 def test_main_put():
@@ -820,10 +823,13 @@ def test_main_put_no_filename():
     message.
     """
     with mock.patch("microfs.put", return_value=True) as mock_put:
-        with mock.patch.object(builtins, "print") as mock_print:
+        with mock.patch.object(builtins, "print") as mock_print, \
+                pytest.raises(SystemExit) as pytest_exc:
             microfs.main(argv=["put"])
-            assert mock_print.call_count == 1
-            assert mock_put.call_count == 0
+    assert mock_print.call_count == 1
+    assert mock_put.call_count == 0
+    assert pytest_exc.type == SystemExit
+    assert pytest_exc.value.code == 2
 
 
 def test_main_get():
@@ -847,10 +853,13 @@ def test_main_get_no_filename():
     message.
     """
     with mock.patch("microfs.get", return_value=True) as mock_get:
-        with mock.patch.object(builtins, "print") as mock_print:
+        with mock.patch.object(builtins, "print") as mock_print, \
+                pytest.raises(SystemExit) as pytest_exc:
             microfs.main(argv=["get"])
-            assert mock_print.call_count == 1
-            assert mock_get.call_count == 0
+    assert mock_print.call_count == 1
+    assert mock_get.call_count == 0
+    assert pytest_exc.type == SystemExit
+    assert pytest_exc.value.code == 2
 
 
 def test_main_handle_exception():
@@ -863,6 +872,10 @@ def test_main_handle_exception():
     mock_class.__enter__.return_value = mock_serial
     with mock.patch("microfs.get", side_effect=ex), mock.patch(
         "microfs.get_serial", return_value=mock_class
-    ), mock.patch.object(builtins, "print") as mock_print:
+    ), mock.patch.object(builtins, "print") as mock_print, pytest.raises(
+        SystemExit
+    ) as pytest_exc:
         microfs.main(argv=["get", "foo"])
-        mock_print.assert_called_once_with(ex)
+    mock_print.assert_called_once_with(ex)
+    assert pytest_exc.type == SystemExit
+    assert pytest_exc.value.code == 1
