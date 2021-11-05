@@ -1,6 +1,15 @@
 Release History
 ===============
 
+1.4.5
+-----
+
+* Updated version of PySerial used by the script.
+* Non-zero exit codes when things go wrong.
+* Execute as ``__main__``.
+* Black formatting updates.
+* Thanks to @carlosperate for these updates.
+
 1.4.4
 -----
 
