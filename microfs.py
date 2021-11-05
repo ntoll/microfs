@@ -419,3 +419,7 @@ def main(argv=None):
         # The exception of no return. Print exception information.
         print(ex)
         sys.exit(1)
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main(sys.argv[1:])
