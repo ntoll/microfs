@@ -399,19 +399,23 @@ def main(argv=None):
                 rm(args.path)
             else:
                 print('rm: missing filename. (e.g. "ufs rm foo.txt")')
+                sys.exit(2)
         elif args.command == "put":
             if args.path:
                 put(args.path, args.target)
             else:
                 print('put: missing filename. (e.g. "ufs put foo.txt")')
+                sys.exit(2)
         elif args.command == "get":
             if args.path:
                 get(args.path, args.target)
             else:
                 print('get: missing filename. (e.g. "ufs get foo.txt")')
+                sys.exit(2)
         else:
             # Display some help.
             parser.print_help()
     except Exception as ex:
         # The exception of no return. Print exception information.
         print(ex)
+        sys.exit(1)
