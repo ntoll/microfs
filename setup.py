@@ -42,7 +42,7 @@ setup(
     ],
     python_requires=">=3.5",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
