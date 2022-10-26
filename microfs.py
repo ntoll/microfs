@@ -293,9 +293,9 @@ def get(filename, target=None, serial=None):
     if err:
         raise IOError(clean_error(err))
     # Recombine the bytes while removing "b'" from start and "'" from end.
-    assert out.startswith(b"b'")
-    assert out.endswith(b"'")
-    out = eval(b"".join(out.split(b"'b'")))
+    assert out.startswith(b"b'") or out.startswith(b'b"')
+    assert out.endswith(b"'") or out.endswith(b'"')
+    out = eval(out)
     with open(target, "wb") as f:
         f.write(out)
     return True
