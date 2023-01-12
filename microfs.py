@@ -69,7 +69,7 @@ def raw_on(serial):
         if not data.endswith(msg):
             if COMMAND_LINE_FLAG:
                 print(data)
-            raise IOError("Could not enter raw REPL.")
+            raise IOError("Could not enter raw REPL. %s" % data)
 
     def flush(serial):
         """Flush all rx input without relying on serial.flushInput()."""
@@ -93,9 +93,9 @@ def raw_on(serial):
             serial.write(b"\r\x01")
             flush_to_msg(serial, raw_repl_msg)
             break
-        except:
-            # retry on exception, ignore
-            pass
+        except Exception as ex:
+            if i == 2: # retrying did not help
+                raise ex
     # Soft Reset with CTRL-D
     serial.write(b"\x04")
     flush_to_msg(serial, b"soft reboot\r\n")
