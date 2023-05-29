@@ -108,7 +108,7 @@ def raw_off(serial):
     serial.write(b"\x02")  # Send CTRL-B to get out of raw mode.
 
 
-def get_serial():
+def get_serial(timeout=1):
     """
     Detect if a micro:bit is connected and return a serial object to talk to
     it.
@@ -119,7 +119,7 @@ def get_serial():
     return Serial(port, SERIAL_BAUD_RATE, timeout=1, parity="N")
 
 
-def execute(commands, serial=None):
+def execute(commands, serial=None, timeout=1):
     """
     Sends the command to the connected micro:bit via serial and returns the
     result. If no serial connection is provided, attempts to autodetect the
@@ -132,7 +132,7 @@ def execute(commands, serial=None):
     """
     close_serial = False
     if serial is None:
-        serial = get_serial()
+        serial = get_serial(timeout)
         close_serial = True
         time.sleep(0.1)
     result = b""
@@ -172,7 +172,7 @@ def clean_error(err):
     return "There was an error."
 
 
-def ls(serial=None):
+def ls(serial=None, timeout=1):
     """
     List the files on the micro:bit.
 
@@ -188,13 +188,14 @@ def ls(serial=None):
             "print(os.listdir())",
         ],
         serial,
+        timeout,
     )
     if err:
         raise IOError(clean_error(err))
     return ast.literal_eval(out.decode("utf-8"))
 
 
-def rm(filename, serial=None):
+def rm(filename, serial=None, timeout=1):
     """
     Removes a referenced file on the micro:bit.
 
@@ -207,13 +208,13 @@ def rm(filename, serial=None):
         "import os",
         "os.remove('{}')".format(filename),
     ]
-    out, err = execute(commands, serial)
+    out, err = execute(commands, serial, timeout)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def put(filename, target=None, serial=None):
+def put(filename, target=None, serial=None, timeout=1):
     """
     Puts a referenced file on the LOCAL file system onto the
     file system on the BBC micro:bit.
@@ -242,13 +243,13 @@ def put(filename, target=None, serial=None):
             commands.append("f(" + repr(line) + ")")
         content = content[64:]
     commands.append("fd.close()")
-    out, err = execute(commands, serial)
+    out, err = execute(commands, serial, timeout)
     if err:
         raise IOError(clean_error(err))
     return True
 
 
-def get(filename, target=None, serial=None):
+def get(filename, target=None, serial=None, timeout=1):
     """
     Gets a referenced file on the device's file system and copies it to the
     target (or current working directory if unspecified).
@@ -289,7 +290,7 @@ def get(filename, target=None, serial=None):
         ),
         "f.close()",
     ]
-    out, err = execute(commands, serial)
+    out, err = execute(commands, serial, timeout)
     if err:
         raise IOError(clean_error(err))
     # Recombine the bytes while removing "b'" from start and "'" from end.
@@ -301,7 +302,7 @@ def get(filename, target=None, serial=None):
     return True
 
 
-def version(serial=None):
+def version(serial=None, timeout=1):
     """
     Returns version information for MicroPython running on the connected
     device.
@@ -319,6 +320,7 @@ def version(serial=None):
                 "print(os.uname())",
             ],
             serial,
+            timeout,
         )
         if err:
             raise ValueError(clean_error(err))
@@ -356,6 +358,7 @@ def main(argv=None):
         COMMAND_LINE_FLAG = True
 
         parser = argparse.ArgumentParser(description=_HELP_TEXT)
+
         subparsers = parser.add_subparsers(
             dest="command", help="One of 'ls', 'rm', 'put' or 'get'"
         )
@@ -367,10 +370,22 @@ def main(argv=None):
             default=" ",
             help='Specify a delimiter string (default is whitespace). Eg. ";"',
         )
+        ls_parser.add_argument(
+            '-t', '--timeout', 
+            type=int, 
+            help='How long we should wait for the device to respond (in seconds)',
+            default=1
+        )
 
         rm_parser = subparsers.add_parser("rm")
         rm_parser.add_argument(
             "path", nargs="?", help="Specify a target filename."
+        )
+        rm_parser.add_argument(
+            '-t', '--timeout', 
+            type=int, 
+            help='How long we should wait for the device to respond (in seconds)',
+            default=1
         )
 
         get_parser = subparsers.add_parser("get")
@@ -380,6 +395,12 @@ def main(argv=None):
         get_parser.add_argument(
             "target", nargs="?", help="Specify a target filename."
         )
+        get_parser.add_argument(
+            '-t', '--timeout', 
+            type=int, 
+            help='How long we should wait for the device to respond (in seconds)',
+            default=1
+        )
 
         put_parser = subparsers.add_parser("put")
         put_parser.add_argument(
@@ -388,27 +409,33 @@ def main(argv=None):
         put_parser.add_argument(
             "target", nargs="?", help="Specify a target filename."
         )
+        put_parser.add_argument(
+            '-t', '--timeout', 
+            type=int, 
+            help='How long we should wait for the device to respond (in seconds)',
+            default=1
+        )
 
         args = parser.parse_args(argv)
         if args.command == "ls":
-            list_of_files = ls()
+            list_of_files = ls(args.timeout)
             if list_of_files:
                 print(args.delimiter.join(list_of_files))
         elif args.command == "rm":
             if args.path:
-                rm(args.path)
+                rm(args.path, args.timeout)
             else:
                 print('rm: missing filename. (e.g. "ufs rm foo.txt")')
                 sys.exit(2)
         elif args.command == "put":
             if args.path:
-                put(args.path, args.target)
+                put(args.path, args.target, args.timeout)
             else:
                 print('put: missing filename. (e.g. "ufs put foo.txt")')
                 sys.exit(2)
         elif args.command == "get":
             if args.path:
-                get(args.path, args.target)
+                get(args.path, args.target, args.timeout)
             else:
                 print('get: missing filename. (e.g. "ufs get foo.txt")')
                 sys.exit(2)
