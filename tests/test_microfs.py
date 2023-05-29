@@ -231,7 +231,7 @@ def test_get_serial():
     with mock.patch(
         "microfs.find_microbit", return_value=mock_result
     ), mock.patch("microfs.Serial", return_value=mock_serial):
-        result = microfs.get_serial()
+        result = microfs.get_serial(1)
         assert result == mock_serial
 
 
@@ -323,7 +323,7 @@ def test_execute_no_serial():
         "microfs.raw_off", return_value=None
     ):
         out, err = microfs.execute(commands)
-        p.assert_called_once_with()
+        p.assert_called_once_with(1)
         mock_serial.close.assert_called_once_with()
 
 
@@ -379,6 +379,7 @@ def test_ls():
                 "print(os.listdir())",
             ],
             mock_serial,
+            1
         )
 
 
@@ -400,6 +401,7 @@ def test_ls_width_delimiter():
                 "print(os.listdir())",
             ],
             mock_serial,
+            1
         )
 
 
@@ -427,6 +429,7 @@ def test_rm():
                 "os.remove('foo')",
             ],
             mock_serial,
+            1
         )
 
 
@@ -463,7 +466,7 @@ def test_put_python3():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial)
+            execute.assert_called_once_with(commands, mock_serial, 1)
 
 
 def test_put_no_target_python3():
@@ -487,7 +490,7 @@ def test_put_no_target_python3():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial)
+            execute.assert_called_once_with(commands, mock_serial, 1)
 
 
 def test_put_python2():
@@ -512,7 +515,7 @@ def test_put_python2():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial)
+            execute.assert_called_once_with(commands, mock_serial, 1)
 
 
 def test_put_no_target_python2():
@@ -536,7 +539,7 @@ def test_put_no_target_python2():
                 "f(b'{}')".format(content),
                 "fd.close()",
             ]
-            execute.assert_called_once_with(commands, mock_serial)
+            execute.assert_called_once_with(commands, mock_serial, 1)
 
 
 def test_put_non_existent_file():
@@ -600,7 +603,7 @@ def test_get():
         mo = mock.mock_open()
         with mock.patch("microfs.open", mo, create=True):
             assert microfs.get("hello.txt", "local.txt", mock_serial)
-            exe.assert_called_once_with(commands, mock_serial)
+            exe.assert_called_once_with(commands, mock_serial, 1)
             mo.assert_called_once_with("local.txt", "wb")
             handle = mo()
             handle.write.assert_called_once_with(b"hello")
@@ -645,7 +648,7 @@ def test_get_no_target():
         mo = mock.mock_open()
         with mock.patch("microfs.open", mo, create=True):
             assert microfs.get("hello.txt")
-            exe.assert_called_once_with(commands, None)
+            exe.assert_called_once_with(commands, None, 1)
             mo.assert_called_once_with("hello.txt", "wb")
             handle = mo()
             handle.write.assert_called_once_with(b"hello")
@@ -695,6 +698,7 @@ def test_version_good_output():
                 "print(os.uname())",
             ],
             mock_serial,
+            1,
         )
 
 
@@ -753,7 +757,26 @@ def test_main_ls():
         builtins, "print"
     ) as mock_print:
         microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with()
+        mock_ls.assert_called_once_with(1)
+        mock_print.assert_called_once_with("foo bar")
+
+
+def test_main_ls_with_timeout():
+    """
+    If the ls command is issued, check the appropriate function is called.
+    """
+    mock_serial = mock.MagicMock()
+    mock_class = mock.MagicMock()
+    mock_class.__enter__.return_value = mock_serial
+    with mock.patch(
+        "microfs.ls", return_value=["foo", "bar"]
+    ) as mock_ls, mock.patch(
+        "microfs.get_serial", return_value=mock_class
+    ), mock.patch.object(
+        builtins, "print"
+    ) as mock_print:
+        microfs.main(argv=["ls", "-t", "3"])
+        mock_ls.assert_called_once_with(3)
         mock_print.assert_called_once_with("foo bar")
 
 
@@ -768,7 +791,7 @@ def test_main_ls_no_files():
         "microfs.get_serial", return_value=mock_class
     ), mock.patch.object(builtins, "print") as mock_print:
         microfs.main(argv=["ls"])
-        mock_ls.assert_called_once_with()
+        mock_ls.assert_called_once_with(1)
         assert mock_print.call_count == 0
 
 
@@ -784,7 +807,22 @@ def test_main_rm():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["rm", "foo"])
-        mock_rm.assert_called_once_with("foo")
+        mock_rm.assert_called_once_with("foo", 1)
+
+
+def test_main_rm_with_timeout():
+    """
+    If the rm command is correctly issued, check the appropriate function is
+    called.
+    """
+    mock_serial = mock.MagicMock()
+    mock_class = mock.MagicMock()
+    mock_class.__enter__.return_value = mock_serial
+    with mock.patch("microfs.rm", return_value=True) as mock_rm, mock.patch(
+        "microfs.get_serial", return_value=mock_class
+    ):
+        microfs.main(argv=["rm", "foo", "-t", "3"])
+        mock_rm.assert_called_once_with("foo", 3)
 
 
 def test_main_rm_no_filename():
@@ -815,7 +853,22 @@ def test_main_put():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["put", "foo"])
-        mock_put.assert_called_once_with("foo", None)
+        mock_put.assert_called_once_with("foo", None, 1)
+
+
+def test_main_put_with_timeout():
+    """
+    If the put command is correctly issued, check the appropriate function is
+    called.
+    """
+    mock_serial = mock.MagicMock()
+    mock_class = mock.MagicMock()
+    mock_class.__enter__.return_value = mock_serial
+    with mock.patch("microfs.put", return_value=True) as mock_put, mock.patch(
+        "microfs.get_serial", return_value=mock_class
+    ):
+        microfs.main(argv=["put", "foo", "-t", "3"])
+        mock_put.assert_called_once_with("foo", None, 3)
 
 
 def test_main_put_no_filename():
@@ -846,7 +899,22 @@ def test_main_get():
         "microfs.get_serial", return_value=mock_class
     ):
         microfs.main(argv=["get", "foo"])
-        mock_get.assert_called_once_with("foo", None)
+        mock_get.assert_called_once_with("foo", None, 1)
+
+
+def test_main_get_with_timeout():
+    """
+    If the get command is correctly issued, check the appropriate function is
+    called.
+    """
+    mock_serial = mock.MagicMock()
+    mock_class = mock.MagicMock()
+    mock_class.__enter__.return_value = mock_serial
+    with mock.patch("microfs.get", return_value=True) as mock_get, mock.patch(
+        "microfs.get_serial", return_value=mock_class
+    ):
+        microfs.main(argv=["get", "foo", "-t", "3"])
+        mock_get.assert_called_once_with("foo", None, 3)
 
 
 def test_main_get_no_filename():
